@@ -3,19 +3,20 @@ import { ActionFormData } from "@minecraft/server-ui";
 
 const afterEvents = world.afterEvents;
 
-let playerPositionX, playerPositionY, playerPositionZ;
+// 각 플레이어의 위치를 저장하기 위한 객체
+let playerPositions = {};
 
-//아이템 사용했을 때 ui열기
+// 아이템 사용했을 때 UI 열기
 afterEvents.itemUse.subscribe((data) => {
-    const block = data.itemStack
-    const player = data.source
+    const block = data.itemStack;
+    const player = data.source;
 
     if (block.typeId == "minecraft:compass") {
         showForm(player);
     }
 });
 
-//ui설정
+// UI 설정
 function showForm(player) {
     const formData = new ActionFormData();
 
@@ -30,25 +31,25 @@ function showForm(player) {
 
         // 위치 저장하기 
         if (response.selection === 0) {
-            playerPositionX = player.location.x
-            playerPositionY = player.location.y
-            playerPositionZ = player.location.z
+            playerPositions[player.name] = {
+                x: player.location.x,
+                y: player.location.y,
+                z: player.location.z
+            };
 
             player.runCommandAsync("title @a actionbar 위치 저장 완료");
-
         }
 
-        //위치로 이동하기
+        // 위치로 이동하기
         if (response.selection === 1) {
+            const position = playerPositions[player.name];
 
-            if (playerPositionX == null) {
+            if (!position) {
                 player.runCommandAsync("title @a actionbar 저장된 장소가 없음");
             } else {
-                player.runCommandAsync(`tp @s ${playerPositionX} ${playerPositionY} ${playerPositionZ}`)
+                player.runCommandAsync(`tp @s ${position.x} ${position.y} ${position.z}`);
                 player.runCommandAsync("title @a actionbar 이동 완료");
             }
         }
     });
 }
-
-
