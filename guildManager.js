@@ -473,7 +473,7 @@ function editGuildInfoUI(player) {
     });
 }
 
-// 길드 정보 업데이트 함수
+// 길드 정보 업데이트 함수 수정
 function updateGuildInfo(player, newGuildName, newDescription) {
     const guilds = getGuilds();
     const playerGuildName = getPlayerGuild(player.name);
@@ -483,6 +483,7 @@ function updateGuildInfo(player, newGuildName, newDescription) {
     }
 
     const guild = guilds[playerGuildName];
+    let nameChanged = false;
 
     if (newGuildName && newGuildName !== playerGuildName) {
         if (guilds[newGuildName]) {
@@ -492,6 +493,7 @@ function updateGuildInfo(player, newGuildName, newDescription) {
         guilds[newGuildName] = guild;
         delete guilds[playerGuildName];
         player.sendMessage(`§a길드 이름을 ${newGuildName}으로 변경했습니다.`);
+        nameChanged = true;
     }
 
     if (newDescription) {
@@ -500,7 +502,28 @@ function updateGuildInfo(player, newGuildName, newDescription) {
     }
 
     saveGuilds(guilds);
+
+    // 길드 이름이 변경되었다면 모든 길드원의 이름 태그 업데이트
+    if (nameChanged) {
+        updateAllGuildMembersTags(newGuildName || playerGuildName);
+    }
+
     openGuildLeaderUI(player);
+}
+
+// 모든 길드원의 이름 태그 업데이트 함수
+function updateAllGuildMembersTags(guildName) {
+    const guilds = getGuilds();
+    const guild = guilds[guildName];
+    if (!guild) return;
+
+    for (const memberName of guild.members) {
+        const member = world.getAllPlayers().find(p => p.name === memberName);
+        if (member) {
+            updatePlayerNameTag(member);
+            member.sendMessage(`§a길드 이름이 '${guildName}'(으)로 변경되었습니다.`);
+        }
+    }
 }
 
 // 길드 해체 확인 UI
@@ -558,6 +581,7 @@ function disbandGuild(player) {
             } else {
                 member.sendMessage(`§c${playerGuildName} 길드가 길드장에 의해 해체되었습니다.`);
             }
+            updatePlayerNameTag(member);
         }
     }
 
@@ -853,3 +877,4 @@ function deleteGuild(player, guildName) {
 
     player.sendMessage(`§a'${guildName}' 길드를 성공적으로 삭제했습니다.`);
 }
+
