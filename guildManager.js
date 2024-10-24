@@ -1,6 +1,37 @@
 import { world, system } from '@minecraft/server';
 import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/server-ui";
 
+/**
+ * 길드 시스템 사용법:
+ * 
+ * 1. 플레이어 명령어:
+ *    - !길드: 일반 길드원용 길드 관리 UI를 엽니다.
+ *    - !길드장: 길드장용 길드 관리 UI를 엽니다.
+ *    - !관리자: 관리자용 길드 관리 UI를 엽니다 (운영자 권한 필요).
+ *    - ㅁ [메시지]: 길드 채팅을 보냅니다.
+ * 
+ * 2. 길드 기능:
+ *    - 길드 생성: 새로운 길드를 만들 수 있습니다.
+ *    - 길드 가입: 기존 길드에 가입 요청을 보낼 수 있습니다.
+ *    - 길드 탈퇴: 현재 소속된 길드에서 탈퇴할 수 있습니다.
+ *    - 길드 정보 확인: 모든 길드의 정보를 볼 수 있습니다.
+ * 
+ * 3. 길드장 기능:
+ *    - 길드 정보 수정: 길드 이름과 설명을 변경할 수 있습니다.
+ *    - 가입 요청 관리: 길드 가입 요청을 수락하거나 거절할 수 있습니다.
+ *    - 길드원 관리: 길드원을 추방할 수 있습니다.
+ * 
+ * 4. 관리자 기능:
+ *    - 길드 삭제: 서버의 모든 길드를 삭제할 수 있습니다.
+ * 
+ * 5. 기타 기능:
+ *    - 길드 채팅: 길드원들끼리 비공개 채팅을 할 수 있습니다.
+ *    - 이름 태그: 길드에 가입한 플레이어의 이름 위에 길드 이름이 표시됩니다.
+ * 
+ * 주의: 이 스크립트를 사용하려면 행동 팩의 manifest.json 파일에 
+ * "@minecraft/server"와 "@minecraft/server-ui" 모듈에 대한 종속성을 추가해야 합니다.
+ */
+
 // 길드 시스템 초기화
 function initGuildSystem() {
     if (!world.getDynamicProperty('guilds')) {
@@ -83,7 +114,7 @@ function leaveGuild(player) {
     let guilds = getGuilds();
     const playerGuildName = getPlayerGuild(player.name);
     if (!playerGuildName) {
-        return false; // 가입한 길드 없음
+        return false; // 입한 길드 없음
     }
     const guild = guilds[playerGuildName];
     
@@ -264,7 +295,7 @@ function guildInfoUI(player) {
         const playerGuildName = getPlayerGuild(player.name);
         if (playerGuildName) {
             const playerGuildInfo = guilds[playerGuildName];
-            guildInfo += `§l§9당신의 길드:§r\n§e길드: §b${playerGuildName}\n§e설명: §f${playerGuildInfo.description}\n§e길드원: §f${playerGuildInfo.members.join(', ')}\n`;
+            guildInfo += `§l§9당신의 길드:§r\n§e길드: §b${playerGuildName}\n§e명: §f${playerGuildInfo.description}\n§e길드원: §f${playerGuildInfo.members.join(', ')}\n`;
             if (playerGuildInfo.leader === player.name) {
                 guildInfo += "§6(당신은 길드장입니다)\n";
             }
@@ -354,7 +385,7 @@ function manageMembersUI(player) {
 
     const form = new ActionFormData()
         .title("길드원 관리")
-        .body(`${playerGuildName} 길드의 길드원 목록입니다. 탈시킬 길드원을 선택하세요.`);
+        .body(`${playerGuildName} 길드의 길드원 목록입니다. 탈퇴 시킬 길드원을 선택하세요.`);
 
     guild.members.forEach(member => {
         if (member !== player.name) {
@@ -496,7 +527,7 @@ function disbandGuildUI(player) {
         if (response.selection === 0) {
             disbandGuild(player);
         } else {
-            player.sendMessage("길드 해체를 취소했습니다.");
+            player.sendMessage("길드 해체를 취소했니다.");
             openGuildLeaderUI(player);
         }
     });
@@ -649,7 +680,7 @@ world.beforeEvents.chatSend.subscribe((ev) => {
     const player = ev.sender;
     const message = ev.message;
 
-    if (message === "!길드" || message === "!길드장") {
+    if (message === "!길드" || message === "!길드장" || message === "!관리자") {
         ev.cancel = true;
         if (message === "!길드") {
             player.sendMessage(`채팅창을 닫으면 길드 관리 창이 열립니다.`);
@@ -657,6 +688,13 @@ world.beforeEvents.chatSend.subscribe((ev) => {
         } else if (message === "!길드장") {
             player.sendMessage(`채팅창을 닫으면 길드장 관리 창이 열립니다.`);
             openGuildLeaderUI(player);
+        } else if (message === "!관리자") {
+            if (player.isOp()) {
+                player.sendMessage(`채팅창을 닫으면 관리자 메뉴가 열립니다.`);
+                openAdminUI(player);
+            } else {
+                player.sendMessage("§c이 명령어를 사용할 권한이 없습니다.");
+            }
         }
     } else if (message.startsWith('ㅁ')) {
         ev.cancel = true;
@@ -703,3 +741,115 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
 system.run(() => {
     initGuildSystem();
 });
+
+// 관리자 UI 열기
+function openAdminUI(player) {
+    system.runTimeout(() => {
+        const form = new ActionFormData();
+        form.title("관리자 메뉴");
+        form.body("원하는 작업을 선택하세요.");
+        form.button("길드 삭제");
+        form.button("닫기");
+
+        form.show(player).then((response) => {
+            if (response.cancelationReason === "UserBusy") {
+                openAdminUI(player);
+            } else if (response.canceled) {
+                player.sendMessage("관리자 메뉴를 닫았습니다.");
+            } else {
+                switch (response.selection) {
+                    case 0: openGuildDeletionUI(player); break;
+                    case 1: player.sendMessage("관리자 메뉴를 닫았습니다."); break;
+                }
+            }
+        }).catch((error) => {
+            console.warn("UI 표시 중 오류 발생:", error);
+            player.sendMessage("UI를 표시하는 중 오류가 발생했습니다.");
+        });
+    }, 20);
+}
+
+// 길드 삭제 UI 열기
+function openGuildDeletionUI(player) {
+    system.runTimeout(() => {
+        const guilds = getGuilds();
+        const guildNames = Object.keys(guilds);
+
+        if (guildNames.length === 0) {
+            player.sendMessage("§c삭제할 길드가 없습니다.");
+            openAdminUI(player);
+            return;
+        }
+
+        const form = new ModalFormData()
+            .title("길드 삭제")
+            .dropdown("삭제할 길드 선택", guildNames)
+            .toggle("뒤로 가기", false);
+
+        form.show(player).then((response) => {
+            if (response.canceled) {
+                openAdminUI(player);
+                return;
+            }
+            const [selectedIndex, goBack] = response.formValues;
+            if (goBack) {
+                openAdminUI(player);
+                return;
+            }
+            const selectedGuildName = guildNames[selectedIndex];
+            deleteGuildConfirmation(player, selectedGuildName);
+        }).catch((error) => {
+            console.warn("UI 표시 중 오류 발생:", error);
+            player.sendMessage("UI를 표시하는 중 오류가 발생했습니다.");
+        });
+    }, 20);
+}
+
+// 길드 삭제 확인 UI
+function deleteGuildConfirmation(player, guildName) {
+    system.runTimeout(() => {
+        const form = new MessageFormData()
+            .title("길드 삭제 확인")
+            .body(`정말로 '${guildName}' 길드를 삭제하시겠습니까?`)
+            .button1("예, 삭제합니다")
+            .button2("아니오, 취소합니다");
+
+        form.show(player).then((response) => {
+            if (response.selection === 0) {
+                deleteGuild(player, guildName);
+            } else {
+                player.sendMessage("길드 삭제가 취소되었습니다.");
+            }
+            openAdminUI(player);
+        }).catch((error) => {
+            console.warn("UI 표시 중 오류 발생:", error);
+            player.sendMessage("UI를 표시하는 중 오류가 발생했습니다.");
+        });
+    }, 20);
+}
+
+// 길드 삭제 함수
+function deleteGuild(player, guildName) {
+    let guilds = getGuilds();
+    if (!guilds[guildName]) {
+        player.sendMessage(`§c'${guildName}' 길드를 찾을 수 없습니다.`);
+        return;
+    }
+
+    const guild = guilds[guildName];
+    
+    // 모든 길드원에게 알림
+    for (const memberName of guild.members) {
+        const member = world.getAllPlayers().find(p => p.name === memberName);
+        if (member) {
+            member.sendMessage(`§c관리자에 의해 '${guildName}' 길드가 삭제되었습니다.`);
+            updatePlayerNameTag(member);
+        }
+    }
+
+    // 길드 삭제
+    delete guilds[guildName];
+    saveGuilds(guilds);
+
+    player.sendMessage(`§a'${guildName}' 길드를 성공적으로 삭제했습니다.`);
+}
