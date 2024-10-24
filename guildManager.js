@@ -39,8 +39,26 @@ function createGuild(player, guildName, guildDescription) {
     guilds[guildName] = {
         leader: player.name,
         description: guildDescription,
-        members: [player.name]
+        members: [player.name],
+        joinRequests: [] // 가입 요청 목록 추가
     };
+    saveGuilds(guilds);
+    return true;
+}
+
+// 길드 가입 요청 함수
+function requestJoinGuild(player, guildName) {
+    let guilds = getGuilds();
+    if (!guilds[guildName]) {
+        return false; // 존재하지 않는 길드
+    }
+    if (guilds[guildName].members.includes(player.name)) {
+        return false; // 이미 가입한 길드
+    }
+    if (guilds[guildName].joinRequests.includes(player.name)) {
+        return false; // 이미 가입 요청을 보낸 상태
+    }
+    guilds[guildName].joinRequests.push(player.name);
     saveGuilds(guilds);
     return true;
 }
@@ -56,6 +74,7 @@ function joinGuild(player, guildName) {
     }
     guilds[guildName].members.push(player.name);
     saveGuilds(guilds);
+    updatePlayerNameTag(player);
     return true;
 }
 
@@ -73,10 +92,11 @@ function leaveGuild(player) {
         delete guilds[playerGuildName];
         saveGuilds(guilds);
         
-        // 모든 길드원에게 길드 해체 알림
+        // 모든 길드원의 이름 태그 초기화
         for (const memberName of guild.members) {
             const member = world.getAllPlayers().find(p => p.name === memberName);
             if (member) {
+                updatePlayerNameTag(member);
                 member.sendMessage(`§c${playerGuildName} 길드가 해체되었습니다. 길드장이 탈퇴했습니다.`);
             }
         }
@@ -84,6 +104,7 @@ function leaveGuild(player) {
         // 일반 길드원 탈퇴
         guild.members = guild.members.filter(member => member !== player.name);
         saveGuilds(guilds);
+        updatePlayerNameTag(player);
     }
     return true;
 }
@@ -116,7 +137,7 @@ function openGuildUI(player) {
             }
         }).catch((error) => {
             console.warn("UI 표시 중 오류 발생:", error);
-            player.sendMessage("UI를 표시하는 중 오류가 발��했습니다.");
+            player.sendMessage("UI를 표시하는 중 오류가 발했습니다.");
         });
     }, 20);
 }
@@ -155,7 +176,7 @@ function createGuildUI(player) {
 function joinGuildUI(player) {
     const currentGuild = getPlayerGuild(player.name);
     if (currentGuild) {
-        player.sendMessage(`이미 ${currentGuild} 길드에 가입되어 있습니다. 새로운 길드에 가입하려면 먼저 현재 길드를 탈퇴해야 합니다.`);
+        player.sendMessage(`이미 ${currentGuild} 길드에 가입되어 있습니다.`);
         return;
     }
 
@@ -167,8 +188,8 @@ function joinGuildUI(player) {
     }
 
     const form = new ModalFormData()
-        .title("길드 가입")
-        .dropdown("가입할 길드를 선택하세요:", guildList)
+        .title("길드 가입 요청")
+        .dropdown("가입을 요청할 길드를 선택하세요:", guildList)
         .toggle("뒤로 가기", false);
 
     form.show(player).then((response) => {
@@ -179,10 +200,10 @@ function joinGuildUI(player) {
             return;
         }
         const selectedGuild = guildList[selectedIndex];
-        if (joinGuild(player, selectedGuild)) {
-            player.sendMessage(`${selectedGuild} 길드에 가입했습니다.`);
+        if (requestJoinGuild(player, selectedGuild)) {
+            player.sendMessage(`${selectedGuild} 길드에 가입 요청을 보냈습니다. 길드장의 승인을 기다려주세요.`);
         } else {
-            player.sendMessage("길드 가입에 실패했습니다. 이미 다른 길드에 가입되어 있을 수 있습니다.");
+            player.sendMessage("가입 요청에 실패했습니다. 이미 요청을 보냈거나 다른 문제가 있을 수 있습니다.");
         }
         openGuildUI(player);
     });
@@ -222,7 +243,7 @@ function leaveGuildUI(player) {
                 player.sendMessage("길드 탈퇴에 실패했습니다.");
             }
         } else {
-            player.sendMessage("길드 탈퇴 ���했습니다.");
+            player.sendMessage("길드 탈퇴 했습니다.");
         }
         openGuildUI(player);
     });
@@ -291,6 +312,7 @@ function openGuildLeaderUI(player) {
         form.body(`§e${playerGuildName} §f길드의 관리 메뉴입니다.`);
         form.button("길드원 관리");
         form.button("길드 정보 수정");
+        form.button("가입 요청 관리");
         form.button("길드 해체");
         form.button("닫기");
 
@@ -303,8 +325,9 @@ function openGuildLeaderUI(player) {
                 switch (response.selection) {
                     case 0: manageMembersUI(player); break;
                     case 1: editGuildInfoUI(player); break;
-                    case 2: disbandGuildUI(player); break;
-                    case 3: player.sendMessage("UI를 닫았습니다."); break;
+                    case 2: manageJoinRequestsUI(player); break;
+                    case 3: disbandGuildUI(player); break;
+                    case 4: player.sendMessage("UI를 닫았습니다."); break;
                 }
             }
         }).catch((error) => {
@@ -331,7 +354,7 @@ function manageMembersUI(player) {
 
     const form = new ActionFormData()
         .title("길드원 관리")
-        .body(`${playerGuildName} 길드의 길드원 ��록입니다. 탈퇴시킬 길드원을 선택하세요.`);
+        .body(`${playerGuildName} 길드의 길드원 목록입니다. 탈시킬 길드원을 선택하세요.`);
 
     guild.members.forEach(member => {
         if (member !== player.name) {
@@ -510,24 +533,173 @@ function disbandGuild(player) {
     player.sendMessage(`§a${playerGuildName} 길드를 성공적으로 해체했습니다.`);
 }
 
-// 이벤트 리스너
-world.beforeEvents.chatSend.subscribe((ev) => {
-    const msg = ev.message;
-    const player = ev.sender;
-
-    if (msg == "!길드") {
-        ev.cancel = true;
-        player.sendMessage(`채팅창을 닫으면 길드 관리 창이 열립니다.`);
-        openGuildUI(player);
+// 가입 요청 관리 UI
+function manageJoinRequestsUI(player) {
+    const playerGuildName = getPlayerGuild(player.name);
+    if (!playerGuildName) {
+        player.sendMessage("§c당신은 길드에 속해있지 않습니다.");
+        return;
     }
-    else if (msg == "!길드장") {
-        ev.cancel = true;
-        player.sendMessage(`채팅창을 닫으면 길드장 관리 창이 열립니다.`);
+
+    const guilds = getGuilds();
+    const guild = guilds[playerGuildName];
+    if (guild.leader !== player.name) {
+        player.sendMessage("§c당신은 길드장이 아닙니다.");
+        return;
+    }
+
+    if (guild.joinRequests.length === 0) {
+        player.sendMessage("§c현재 가입 요청이 없습니다.");
         openGuildLeaderUI(player);
+        return;
+    }
+
+    const form = new ActionFormData()
+        .title("가입 요청 관리")
+        .body(`${playerGuildName} 길드의 가입 요청 목록입니다. 처리할 요청을 선택하세요.`);
+
+    guild.joinRequests.forEach(requester => {
+        form.button(requester);
+    });
+
+    form.button("뒤로 가기");
+
+    form.show(player).then((response) => {
+        if (response.canceled || response.selection === guild.joinRequests.length) {
+            openGuildLeaderUI(player);
+            return;
+        }
+
+        const selectedRequester = guild.joinRequests[response.selection];
+        processJoinRequestUI(player, selectedRequester);
+    });
+}
+
+// 가입 요청 처리 UI
+function processJoinRequestUI(player, requester) {
+    const form = new MessageFormData()
+        .title("가입 요청 처리")
+        .body(`${requester}의 가입 요청을 어떻게 처리하시겠습니까?`)
+        .button1("수락")
+        .button2("거절");
+
+    form.show(player).then((response) => {
+        if (response.selection === 0) {
+            acceptJoinRequest(player, requester);
+        } else {
+            rejectJoinRequest(player, requester);
+        }
+        manageJoinRequestsUI(player);
+    });
+}
+
+// 가입 요청 수락 함수
+function acceptJoinRequest(player, requester) {
+    const guilds = getGuilds();
+    const playerGuildName = getPlayerGuild(player.name);
+    if (!playerGuildName || guilds[playerGuildName].leader !== player.name) {
+        player.sendMessage("§c권한이 없습니다.");
+        return;
+    }
+
+    const guild = guilds[playerGuildName];
+    guild.members.push(requester);
+    guild.joinRequests = guild.joinRequests.filter(r => r !== requester);
+    saveGuilds(guilds);
+
+    player.sendMessage(`§a${requester}의 가입 요청 수락했습니다.`);
+    const newMember = world.getAllPlayers().find(p => p.name === requester);
+    if (newMember) {
+        newMember.sendMessage(`§a당신의 ${playerGuildName} 길드 가입 요청이 수락되었습니다.`);
+    }
+}
+
+// 가입 요청 거절 함수
+function rejectJoinRequest(player, requester) {
+    const guilds = getGuilds();
+    const playerGuildName = getPlayerGuild(player.name);
+    if (!playerGuildName || guilds[playerGuildName].leader !== player.name) {
+        player.sendMessage("§c권한이 없습니다.");
+        return;
+    }
+
+    const guild = guilds[playerGuildName];
+    guild.joinRequests = guild.joinRequests.filter(r => r !== requester);
+    saveGuilds(guilds);
+
+    player.sendMessage(`§a${requester}의 가입 요청을 거절했습니다.`);
+    const rejectedPlayer = world.getAllPlayers().find(p => p.name === requester);
+    if (rejectedPlayer) {
+        rejectedPlayer.sendMessage(`§c당신의 ${playerGuildName} 길드 가입 요청이 거절되었습니다.`);
+    }
+}
+
+// 플레이어의 이름 태그 업데이트
+function updatePlayerNameTag(player) {
+    const guildName = getPlayerGuild(player.name);
+    if (guildName) {
+        player.nameTag = `§8[§6${guildName}§8] §f${player.name}`;
+    } else {
+        player.nameTag = player.name;
+    }
+}
+
+// 채팅 이벤트 수정
+world.beforeEvents.chatSend.subscribe((ev) => {
+    const player = ev.sender;
+    const message = ev.message;
+
+    if (message === "!길드" || message === "!길드장") {
+        ev.cancel = true;
+        if (message === "!길드") {
+            player.sendMessage(`채팅창을 닫으면 길드 관리 창이 열립니다.`);
+            openGuildUI(player);
+        } else if (message === "!길드장") {
+            player.sendMessage(`채팅창을 닫으면 길드장 관리 창이 열립니다.`);
+            openGuildLeaderUI(player);
+        }
+    } else if (message.startsWith('ㅁ')) {
+        ev.cancel = true;
+        sendGuildMessage(player, message.slice(1).trim());
+    } else {
+        const guildName = getPlayerGuild(player.name);
+        if (guildName) {
+            ev.cancel = true;
+            world.sendMessage(`§8[§6${guildName}§8] §f${player.name}: ${message}`);
+        }
     }
 });
 
-// 서버 시작 시 길드 시스템 초기화
+// 길드 메시지 전송 함수
+function sendGuildMessage(player, message) {
+    const guildName = getPlayerGuild(player.name);
+    if (!guildName) {
+        player.sendMessage("§c당신은 길드에 속해있지 않습니다.");
+        return;
+    }
+
+    const guilds = getGuilds();
+    const guild = guilds[guildName];
+    
+    const guildMessage = `§8[§6${guildName}§8] §a[길드] §f${player.name}: ${message}`;
+    
+    for (const memberName of guild.members) {
+        const member = world.getAllPlayers().find(p => p.name === memberName);
+        if (member) {
+            member.sendMessage(guildMessage);
+        }
+    }
+}
+
+// 플레이어 스폰 이벤트 (이름 태그 업데이트용)
+world.afterEvents.playerSpawn.subscribe((ev) => {
+    const player = ev.player;
+    system.runTimeout(() => {
+        updatePlayerNameTag(player);
+    }, 20);
+});
+
+// 서버 시작 시 초기화
 system.run(() => {
     initGuildSystem();
 });
