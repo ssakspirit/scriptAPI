@@ -7,7 +7,7 @@ import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/serve
  * 1. 플레이어 명령어:
  *    - !길드: 일반 길드원용 길드 관리 UI를 엽니다.
  *    - !길드장: 길드장용 길드 관리 UI를 엽니다.
- *    - !관리자: 관리자용 길드 관리 UI를 엽니다 (운영자 권한 필요).
+ *    - !관리자: 관리자용 길드 관리 UI를 엽니다 ('admin' tag 필요).
  *    - ㅁ [메시지]: 길드 채팅을 보냅니다.
  * 
  * 2. 길드 기능:
@@ -71,9 +71,13 @@ function createGuild(player, guildName, guildDescription) {
         leader: player.name,
         description: guildDescription,
         members: [player.name],
-        joinRequests: [] // 가입 요청 목록 추가
+        joinRequests: []
     };
     saveGuilds(guilds);
+    
+    // 길드 생성 직후 플레이어의 이름 태그 업데이트
+    updatePlayerNameTag(player);
+    
     return true;
 }
 
@@ -196,6 +200,10 @@ function createGuildUI(player) {
         }
         if (createGuild(player, guildName, guildDescription)) {
             player.sendMessage(`${guildName} 길드를 생성했습니다. 당신이 길드장입니다.`);
+            // 길드 생성 성공 후 이름 태그 업데이트 확인
+            system.runTimeout(() => {
+                updatePlayerNameTag(player);
+            }, 20);
         } else {
             player.sendMessage(`${guildName} 길드를 생성할 수 없습니다. 이미 존재하는 이름입니다.`);
         }
@@ -735,7 +743,7 @@ world.beforeEvents.chatSend.subscribe((ev) => {
             player.sendMessage(`채팅창을 닫으면 길드장 관리 창이 열립니다.`);
             openGuildLeaderUI(player);
         } else if (message === "!관리자") {
-            if (player.isOp()) {
+            if (player.hasTag("admin")) {
                 player.sendMessage(`채팅창을 닫으면 관리자 메뉴가 열립니다.`);
                 openAdminUI(player);
             } else {
@@ -788,7 +796,7 @@ system.run(() => {
     initGuildSystem();
 });
 
-// 관리��� UI 열기
+// 관리 UI 열기
 function openAdminUI(player) {
     system.runTimeout(() => {
         const form = new ActionFormData();
