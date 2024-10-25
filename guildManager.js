@@ -387,21 +387,20 @@ function manageMembersUI(player) {
         .title("길드원 관리")
         .body(`${playerGuildName} 길드의 길드원 목록입니다. 탈퇴 시킬 길드원을 선택하세요.`);
 
-    guild.members.forEach(member => {
-        if (member !== player.name) {
-            form.button(member);
-        }
+    const kickableMembers = guild.members.filter(member => member !== player.name);
+    kickableMembers.forEach(member => {
+        form.button(member);
     });
 
     form.button("뒤로 가기");
 
     form.show(player).then((response) => {
-        if (response.canceled || response.selection === guild.members.length - 1) {
+        if (response.canceled || response.selection === kickableMembers.length) {
             openGuildLeaderUI(player);
             return;
         }
 
-        const selectedMember = guild.members[response.selection];
+        const selectedMember = kickableMembers[response.selection];
         kickMemberConfirmUI(player, selectedMember);
     });
 }
@@ -432,6 +431,16 @@ function kickMember(player, memberToKick) {
     }
 
     const guild = guilds[playerGuildName];
+    if (memberToKick === player.name) {
+        player.sendMessage("§c자기 자신을 추방할 수 없습니다.");
+        return;
+    }
+
+    if (!guild.members.includes(memberToKick)) {
+        player.sendMessage(`§c${memberToKick}은(는) 길드원이 아닙니다.`);
+        return;
+    }
+
     guild.members = guild.members.filter(member => member !== memberToKick);
     saveGuilds(guilds);
 
@@ -439,7 +448,11 @@ function kickMember(player, memberToKick) {
     const kickedPlayer = world.getAllPlayers().find(p => p.name === memberToKick);
     if (kickedPlayer) {
         kickedPlayer.sendMessage(`§c당신은 ${playerGuildName} 길드에서 추방되었습니다.`);
+        updatePlayerNameTag(kickedPlayer);
     }
+
+    // 길드장의 이름 태그는 변경되지 않아야 함
+    updatePlayerNameTag(player);
 }
 
 // 길드 정보 수정 UI
@@ -662,10 +675,19 @@ function acceptJoinRequest(player, requester) {
     guild.joinRequests = guild.joinRequests.filter(r => r !== requester);
     saveGuilds(guilds);
 
-    player.sendMessage(`§a${requester}의 가입 요청 수락했습니다.`);
+    player.sendMessage(`§a${requester}의 가입 요청을 수락했습니다.`);
     const newMember = world.getAllPlayers().find(p => p.name === requester);
     if (newMember) {
         newMember.sendMessage(`§a당신의 ${playerGuildName} 길드 가입 요청이 수락되었습니다.`);
+        updatePlayerNameTag(newMember);  // 새로운 멤버의 이름 태그 즉시 업데이트
+    }
+
+    // 모든 온라인 길드원의 이름 태그 업데이트
+    for (const memberName of guild.members) {
+        const member = world.getAllPlayers().find(p => p.name === memberName);
+        if (member) {
+            updatePlayerNameTag(member);
+        }
     }
 }
 
@@ -766,7 +788,7 @@ system.run(() => {
     initGuildSystem();
 });
 
-// 관리자 UI 열기
+// 관리��� UI 열기
 function openAdminUI(player) {
     system.runTimeout(() => {
         const form = new ActionFormData();
