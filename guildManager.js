@@ -303,7 +303,7 @@ function guildInfoUI(player) {
         const playerGuildName = getPlayerGuild(player.name);
         if (playerGuildName) {
             const playerGuildInfo = guilds[playerGuildName];
-            guildInfo += `§l§9당신의 길드:§r\n§e길드: §b${playerGuildName}\n§e명: §f${playerGuildInfo.description}\n§e길드원: §f${playerGuildInfo.members.join(', ')}\n`;
+            guildInfo += `§l§9당신의 길드:§r\n§e길드: §b${playerGuildName}\n§e설명: §f${playerGuildInfo.description}\n§e길드원: §f${playerGuildInfo.members.join(', ')}\n`;
             if (playerGuildInfo.leader === player.name) {
                 guildInfo += "§6(당신은 길드장입니다)\n";
             }
