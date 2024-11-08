@@ -206,7 +206,7 @@ class PlayerEnhancement {
             world.sendMessage(`§c${player.name}님이 강화에 실패하여 [수련] 단계로 돌아갔습니다...`);
         }
 
-        // 강화 결과 정보 표시
+        // 지정된 시간 후에 코드를 실행하는 타이머 함수, succes 참이면 20틱 후, 거짓이면 60틱 후 메시지 표시
         await system.runTimeout(() => {
             this.showEnhancementInfo(player);
         }, success ? 20 : 60);
