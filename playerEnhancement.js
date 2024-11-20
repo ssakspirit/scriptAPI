@@ -147,11 +147,12 @@ class PlayerEnhancement {
     }
 
     // 비용 소비
-    consumeCost(player, level) {
+    async consumeCost(player, level) {
         const cost = this.enhancementConfig[level].cost;
         try {
-            system.run(() => {
-                player.runCommand(`clear @s minecraft:emerald ${cost.emerald}`);
+            await system.run(async () => {
+                player.runCommand(`clear @s minecraft:emerald 0 ${cost.emerald}`);
+
             });
         } catch (error) {
             console.warn("비용 소비 중 오류:", error);
@@ -179,7 +180,7 @@ class PlayerEnhancement {
         }
 
         // 비용 소비
-        this.consumeCost(player, nextLevel);
+        await this.consumeCost(player, nextLevel);
         
         const success = Math.random() * 100 < config.successRate;
         
