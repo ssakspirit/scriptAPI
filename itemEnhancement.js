@@ -226,7 +226,7 @@ async function enhanceItem(item, currentLevel = 0, player) {
             return { success: false, message: "§c강화할 수 없는 아이템입니다." };
         }
 
-        // 최대 레벨 체크를 먼저
+        // 최대 레벨 체크
         if (currentLevel >= 4) {
             await player.runCommandAsync(`playsound mob.villager.no @s ~ ~ ~ 1 1`);
             return { 
@@ -235,18 +235,17 @@ async function enhanceItem(item, currentLevel = 0, player) {
             };
         }
 
-        // 에메랄드 확인
+        // 에메랄드 확인 - 인벤토리 컴포넌트 사용
+        const inventory = player.getComponent("inventory");
         let hasEmerald = false;
-        try {
-            await player.runCommandAsync(`testfor @s[hasitem={item=minecraft:emerald,quantity=1..}]`);
-            hasEmerald = true;
-            console.log("에메랄드 있음");
-            
-        } catch {
-            hasEmerald = false;
-            console.log("에메랄드 없음");
-
-            
+        
+        // 전체 인벤토리 슬롯 확인
+        for (let i = 0; i < inventory.container.size; i++) {
+            const slotItem = inventory.container.getItem(i);
+            if (slotItem?.typeId === "minecraft:emerald") {
+                hasEmerald = true;
+                break;
+            }
         }
 
         // 에메랄드가 없으면 여기서 종료
@@ -258,15 +257,8 @@ async function enhanceItem(item, currentLevel = 0, player) {
             };
         }
 
-        // 에메랄드가 있을 때만 차감 시도
-        try {
-            await player.runCommandAsync(`clear @s emerald 0 1`);
-        } catch (error) {
-            return { 
-                success: false, 
-                message: "§c에메랄드 처리 중 오류가 발생했습니다." 
-            };
-        }
+        // 에메랄드가 있을 때만 차감 - 문법 수정
+        await player.runCommandAsync(`clear @s emerald 0 1`);
 
         // 강화 확률 계산
         const successChance = ENHANCEMENT_CHANCES[currentLevel];
