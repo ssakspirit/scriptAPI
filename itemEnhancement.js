@@ -1,6 +1,6 @@
-import { world, EnchantmentTypes } from "@minecraft/server";
+import { world, system } from "@minecraft/server";
 
-console.warn("아이템 강화 시스템이 로드되었습니다."); // 스크립트 로드 확인
+console.warn("아이템 강화 시스템이 로드되었습니다.");
 
 // 플레이어별 마지막 클릭 시간을 저장할 맵
 const lastClickTimes = new Map();
@@ -162,22 +162,6 @@ const ENHANCEABLE_ITEMS = {
     }
 };
 
-// 아이템 타입별 강화 성공 메시지
-const TYPE_MESSAGES = {
-    weapon: {
-        success: "§a무기가 더욱 강력해졌습니다!",
-        maxLevel: "§c이미 최대로 강화된 무기입니다."
-    },
-    armor: {
-        success: "§a방어구가 더욱 단단해졌습니다!",
-        maxLevel: "§c이미 최대로 강화된 방어구입니다."
-    },
-    tool: {
-        success: "§a도구가 더욱 효율적으로 변했습니다!",
-        maxLevel: "§c이미 최대로 강화된 도구입니다."
-    }
-};
-
 // 강화 단계별 이름 접두사
 const ENHANCEMENT_PREFIXES = {
     1: "§a[+1] ",
@@ -185,6 +169,15 @@ const ENHANCEMENT_PREFIXES = {
     3: "§b[+3] ",
     4: "§d[+4] ",
     5: "§6[+5] "
+};
+
+// 강 단 성공 확률 (%)
+const ENHANCEMENT_CHANCES = {
+    0: 100,  // 0 -> 1 강화 확률
+    1: 80,   // 1 -> 2 강화 확률
+    2: 60,   // 2 -> 3 강화 확률
+    3: 40,   // 3 -> 4 화 확률
+    4: 20    // 4 -> 5 강화 확률
 };
 
 // 현재 강화 단계를 확인하는 함수 수정
@@ -233,17 +226,40 @@ async function enhanceItem(item, currentLevel = 0, player) {
             return { success: false, message: "§c강화할 수 없는 아이템입니다." };
         }
 
-        // 에메랄드 확인 및 제거
+        // 최대 레벨 체크를 먼저
+        if (currentLevel >= 4) {
+            await player.runCommandAsync(`playsound mob.villager.no @s ~ ~ ~ 1 1`);
+            return { 
+                success: false, 
+                message: "§c이미 최대로 강화되었습니다." 
+            };
+        }
+
+        // 에메랄드 확인
+        let hasEmerald = false;
         try {
-            // 에메랄드 소지 여부 확인
-            const checkResult = await player.runCommandAsync(`clear @s emerald 0 0`);
-            if (!checkResult) {
-                return { 
-                    success: false, 
-                    message: "§c강화에 필요한 에메랄드가 부족합니다. (필요: 1개)" 
-                };
-            }
-            // 에메랄드 1개 제거
+            await player.runCommandAsync(`testfor @s[hasitem={item=minecraft:emerald,quantity=1..}]`);
+            hasEmerald = true;
+            console.log("에메랄드 있음");
+            
+        } catch {
+            hasEmerald = false;
+            console.log("에메랄드 없음");
+
+            
+        }
+
+        // 에메랄드가 없으면 여기서 종료
+        if (!hasEmerald) {
+            await player.runCommandAsync(`playsound mob.villager.no @s ~ ~ ~ 1 1`);
+            return { 
+                success: false, 
+                message: "§c강화에 필요한 에메랄드가 부족합니다. (필요: 1개)" 
+            };
+        }
+
+        // 에메랄드가 있을 때만 차감 시도
+        try {
             await player.runCommandAsync(`clear @s emerald 0 1`);
         } catch (error) {
             return { 
@@ -252,21 +268,27 @@ async function enhanceItem(item, currentLevel = 0, player) {
             };
         }
 
-        if (currentLevel >= 4) {
-            const itemConfig = ENHANCEABLE_ITEMS[item.typeId];
-            // 실패시 에메랄드 반환
-            await player.runCommandAsync(`give @s emerald 1`);
-            return { 
-                success: false, 
-                message: TYPE_MESSAGES[itemConfig.type].maxLevel || "§c이미 최대로 강화되었습니다." 
+        // 강화 확률 계산
+        const successChance = ENHANCEMENT_CHANCES[currentLevel];
+        const randomValue = Math.random() * 100;
+
+        // 강화 실패
+        if (randomValue > successChance) {
+            await player.runCommandAsync(`clear @s ${item.typeId} 0 1`);
+            await player.runCommandAsync(`playsound random.break @s ~ ~ ~ 1 1`);
+            await player.runCommandAsync(`playsound mob.wither.death @s ~ ~ ~ 0.5 0.5`);
+            return {
+                success: false,
+                message: `§c강화 실패! 아이템이 파괴되었습니다. (성공확률: ${successChance}%)`
             };
         }
 
-        const nextLevel = currentLevel + 1;
-        const itemConfig = ENHANCEABLE_ITEMS[item.typeId];
-        const enchantments = itemConfig.enchantments[nextLevel];
-
+        // 여기까지 왔다면 에메랄드도 있고, 강화도 성공한 상태
         try {
+            const nextLevel = currentLevel + 1;
+            const itemConfig = ENHANCEABLE_ITEMS[item.typeId];
+            const enchantments = itemConfig.enchantments[nextLevel];
+
             await player.runCommandAsync(`clear @s ${item.typeId} 0 1`);
             await player.runCommandAsync(`give @s ${item.typeId} 1`);
             
@@ -274,24 +296,19 @@ async function enhanceItem(item, currentLevel = 0, player) {
                 await player.runCommandAsync(`enchant @s ${enchantType} ${level}`);
             }
             
+            await player.runCommandAsync(`playsound random.levelup @s ~ ~ ~ 1 1`);
+            await player.runCommandAsync(`playsound random.orb @s ~ ~ ~ 1 1`);
+            
             return { 
                 success: true, 
-                message: `§a아이템이 +${nextLevel} 단계로 강화되었습니다!` 
+                message: `§a강화 성공! +${nextLevel} 단계 달성! (성공확률: ${successChance}%)` 
             };
 
         } catch (cmdError) {
-            // 실패시 에메랄드 반환
-            await player.runCommandAsync(`give @s emerald 1`);
             return { success: false, message: "§c강화 중 오류가 발생했습니다." };
         }
 
     } catch (error) {
-        // 실패시 에메랄드 반환
-        try {
-            await player.runCommandAsync(`give @s emerald 1`);
-        } catch (giveError) {
-            // 에메랄드 반환 실패는 무시
-        }
         return {
             success: false,
             message: "§c강화 처리 중 오류가 발생했습니다."
@@ -299,32 +316,8 @@ async function enhanceItem(item, currentLevel = 0, player) {
     }
 }
 
-// 액션바 메시지 표시 함수 수정
-function showActionBarMessage(player, item, currentLevel) {
-    try {
-        if (!item || !ENHANCEABLE_ITEMS[item.typeId]) {
-            player.runCommandAsync('title @s actionbar §e강화 가능한 아이템을 들어주세요');
-            return;
-        }
-
-        const itemName = item.typeId.split(':')[1].replace(/_/g, ' ');
-        let message = "";
-
-        if (currentLevel >= 4) {
-            message = `§6${itemName} §f[§b+${currentLevel}§f] §c(최대 강화입니다)`;
-        } else {
-            const nextLevel = currentLevel + 1;
-            message = `§6${itemName} §f[§b+${currentLevel}§f] §e→ §f[§b+${nextLevel}§f]`;
-        }
-
-        player.runCommandAsync(`title @s actionbar ${message}`);
-    } catch (error) {
-        console.warn("액션바 메시지 표시 중 오류:", error);
-    }
-}
-
-// 아이템 사용 이벤트 수정
-world.beforeEvents.itemUse.subscribe(async (event) => {
+// itemUse 이벤트 수정 - 액션바 관련 코드 제거
+world.afterEvents.itemUse.subscribe((event) => {
     const player = event.source;
     const item = event.itemStack;
     
@@ -333,7 +326,6 @@ world.beforeEvents.itemUse.subscribe(async (event) => {
             // 강화 가능한 아이템인지 먼저 확인
             const itemConfig = ENHANCEABLE_ITEMS[item.typeId];
             if (!itemConfig) {
-                showActionBarMessage(player, null, 0);
                 return; // 강화 불가능한 아이템이면 무시
             }
 
@@ -342,9 +334,6 @@ world.beforeEvents.itemUse.subscribe(async (event) => {
             
             // 현재 강화 단계 확인
             const currentLevel = getCurrentLevel(item, itemConfig);
-            
-            // 액션바 메시지 표시
-            showActionBarMessage(player, item, currentLevel);
             
             // 4단계인 경우 더 이상 강화 불가
             if (currentLevel >= 4) {
@@ -357,8 +346,6 @@ world.beforeEvents.itemUse.subscribe(async (event) => {
                 // async 함수 호출
                 enhanceItem(item, currentLevel, player).then(result => {
                     player.sendMessage(result.message);
-                    // 강화 완료 후 액션바 업데이트
-                    showActionBarMessage(player, item, currentLevel + 1);
                 }).catch(error => {
                     console.warn("강화 처리 중 오류:", error);
                     player.sendMessage("§c강화 중 오류가 발생했습니다.");
@@ -370,30 +357,9 @@ world.beforeEvents.itemUse.subscribe(async (event) => {
                 player.sendMessage("§e한 번 더 클릭하면 강화를 시도합니다.");
                 lastClickTimes.set(player.id, currentTime);
             }
-        } else {
-            showActionBarMessage(player, null, 0);
-            player.sendMessage("§c손에 아이템을 들고 있어야 합니다.");
         }
     } catch (error) {
         console.warn("오류 발생:", error);
         player.sendMessage("§c강화 중 오류가 발생했습니다.");
-    }
-});
-
-// 틱 이벤트 추가 - 지속적인 액션바 업데이트
-world.afterEvents.tick.subscribe(() => {
-    for (const player of world.getAllPlayers()) {
-        const item = player.getComponent("inventory").container.getItem(player.selectedSlot);
-        if (item) {
-            const itemConfig = ENHANCEABLE_ITEMS[item.typeId];
-            if (itemConfig) {
-                const currentLevel = getCurrentLevel(item, itemConfig);
-                showActionBarMessage(player, item, currentLevel);
-            } else {
-                showActionBarMessage(player, null, 0);
-            }
-        } else {
-            showActionBarMessage(player, null, 0);
-        }
     }
 });
