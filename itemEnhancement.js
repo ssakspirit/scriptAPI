@@ -189,61 +189,39 @@ const ENHANCEMENT_PREFIXES = {
 
 // 현재 강화 단계를 확인하는 함수 수정
 function getCurrentLevel(item, itemConfig) {
-    if (!item || !itemConfig) {
-        console.warn("아이템 또는 설정 없음");
-        return 0;
-    }
+    if (!item || !itemConfig) return 0;
     
     try {
         const enchantable = item.getComponent("minecraft:enchantable");
-        if (!enchantable) {
-            console.warn("인챈트 컴포넌트 없음");
-            return 0;
-        }
+        if (!enchantable) return 0;
 
-        // 현재 인챈트 정보 가져오기
         const enchantments = enchantable.getEnchantments();
         const currentEnchants = {};
         
-        // 모든 인챈트 정보 수집
         for (const enchant of enchantments) {
             if (enchant.type?.id) {
-                // minecraft: 접두사 제거
                 const simpleId = enchant.type.id.replace('minecraft:', '');
                 currentEnchants[simpleId] = enchant.level;
-                console.warn(`인챈트 발견: ${simpleId} 레벨 ${enchant.level}`);
             }
         }
 
-        console.warn("현재 인챈트:", JSON.stringify(currentEnchants));
-
-        // 4단계부터 1단계까지 역순으로 확인 (5->4로 변경)
         for (let level = 4; level >= 1; level--) {
             const levelEnchants = itemConfig.enchantments[level];
             let isMatch = true;
             
-            // 모든 필요한 인챈트가 있는지 확인
             for (const [enchantType, expectedLevel] of Object.entries(levelEnchants)) {
                 const currentLevel = currentEnchants[enchantType];
-                console.warn(`레벨 ${level} 검사: ${enchantType} - 현재 ${currentLevel}, 기대값 ${expectedLevel}`);
-                
                 if (currentLevel !== expectedLevel) {
                     isMatch = false;
                     break;
                 }
             }
             
-            // 모든 인챈트가 일치하면 해당 레벨 반환
-            if (isMatch) {
-                console.warn(`현재 강화 단계 확인됨: ${level}`);
-                return level;
-            }
+            if (isMatch) return level;
         }
         
-        console.warn("강화 단계 0 반환");
         return 0;
     } catch (error) {
-        console.warn("강화 단계 확인 중 오류:", error);
         return 0;
     }
 }
@@ -255,9 +233,29 @@ async function enhanceItem(item, currentLevel = 0, player) {
             return { success: false, message: "§c강화할 수 없는 아이템입니다." };
         }
 
-        // 현재 레벨이 4이면 강화 중지 (5->4로 변경)
+        // 에메랄드 확인 및 제거
+        try {
+            // 에메랄드 소지 여부 확인
+            const checkResult = await player.runCommandAsync(`clear @s emerald 0 0`);
+            if (!checkResult) {
+                return { 
+                    success: false, 
+                    message: "§c강화에 필요한 에메랄드가 부족합니다. (필요: 1개)" 
+                };
+            }
+            // 에메랄드 1개 제거
+            await player.runCommandAsync(`clear @s emerald 0 1`);
+        } catch (error) {
+            return { 
+                success: false, 
+                message: "§c에메랄드 처리 중 오류가 발생했습니다." 
+            };
+        }
+
         if (currentLevel >= 4) {
             const itemConfig = ENHANCEABLE_ITEMS[item.typeId];
+            // 실패시 에메랄드 반환
+            await player.runCommandAsync(`give @s emerald 1`);
             return { 
                 success: false, 
                 message: TYPE_MESSAGES[itemConfig.type].maxLevel || "§c이미 최대로 강화되었습니다." 
@@ -265,41 +263,35 @@ async function enhanceItem(item, currentLevel = 0, player) {
         }
 
         const nextLevel = currentLevel + 1;
-        console.warn(`강화 시도: ${currentLevel} -> ${nextLevel}`);
-
         const itemConfig = ENHANCEABLE_ITEMS[item.typeId];
         const enchantments = itemConfig.enchantments[nextLevel];
 
         try {
-            // 기존 아이템 제거
             await player.runCommandAsync(`clear @s ${item.typeId} 0 1`);
-            
-            // 새 아이템 지급
             await player.runCommandAsync(`give @s ${item.typeId} 1`);
             
-            // 인챈트 적용
             for (const [enchantType, level] of Object.entries(enchantments)) {
-                try {
-                    await player.runCommandAsync(`enchant @s ${enchantType} ${level}`);
-                    console.warn(`인챈트 적용 성공: ${enchantType} ${level}`);
-                } catch (enchantError) {
-                    console.warn(`인챈트 적용 실패: ${enchantType} ${level}`, enchantError);
-                }
+                await player.runCommandAsync(`enchant @s ${enchantType} ${level}`);
             }
             
-            console.warn(`강화 완료: ${nextLevel}단계`);
             return { 
                 success: true, 
                 message: `§a아이템이 +${nextLevel} 단계로 강화되었습니다!` 
             };
 
         } catch (cmdError) {
-            console.warn("명령어 실행 중 오류:", cmdError);
+            // 실패시 에메랄드 반환
+            await player.runCommandAsync(`give @s emerald 1`);
             return { success: false, message: "§c강화 중 오류가 발생했습니다." };
         }
 
     } catch (error) {
-        console.warn("강화 처리 중 오류:", error);
+        // 실패시 에메랄드 반환
+        try {
+            await player.runCommandAsync(`give @s emerald 1`);
+        } catch (giveError) {
+            // 에메랄드 반환 실패는 무시
+        }
         return {
             success: false,
             message: "§c강화 처리 중 오류가 발생했습니다."
