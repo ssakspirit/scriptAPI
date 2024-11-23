@@ -171,9 +171,16 @@ const ENHANCEMENT_PREFIXES = {
 // 강화 단계별 성공 확률 (%)
 const ENHANCEMENT_CHANCES = {
     0: 100,  // 0 -> 1 강화 확률
-    1: 80,   // 1 -> 2 강화 확률
+    1: 80,   // 1 -> 2 강화 률
     2: 60,   // 2 -> 3 강화 확률
     3: 40    // 3 -> 4 강화 확률
+};
+
+// 강화 비용 설정
+const ENHANCEMENT_COST = {
+    item: "minecraft:emerald",  // 강화에 필요한 아이템
+    count: 1,                   // 필요한 개수
+    displayName: "에메랄드"    // 표시될 이름
 };
 
 // 현재 강화 단계를 확인하는 함수 수정
@@ -231,21 +238,22 @@ async function enhanceItem(item, currentLevel = 0, player) {
         }
 
         const inventory = player.getComponent("inventory");
-        let hasEmerald = false;
+        let hasCostItem = false;
         
+        // 강화 비용 아이템 확인
         for (let i = 0; i < inventory.container.size; i++) {
             const slotItem = inventory.container.getItem(i);
-            if (slotItem?.typeId === "minecraft:emerald") {
-                hasEmerald = true;
+            if (slotItem?.typeId === ENHANCEMENT_COST.item && slotItem.amount >= ENHANCEMENT_COST.count) {
+                hasCostItem = true;
                 break;
             }
         }
 
-        if (!hasEmerald) {
+        if (!hasCostItem) {
             await player.runCommandAsync(`playsound mob.villager.no @s ~ ~ ~ 1 1`);
             return { 
                 success: false, 
-                message: "§c강화에 필요한 에메랄드가 부족합니다. (필요: 1개)" 
+                message: `§c강화에 필요한 ${ENHANCEMENT_COST.displayName}가 부족합니다. (필요: ${ENHANCEMENT_COST.count}개)` 
             };
         }
 
@@ -253,7 +261,8 @@ async function enhanceItem(item, currentLevel = 0, player) {
         const randomValue = Math.random() * 100;
 
         if (randomValue > successChance) {
-            await player.runCommandAsync(`clear @s emerald 0 1`);
+            // 실패 시 아이템 제거
+            await player.runCommandAsync(`clear @s ${ENHANCEMENT_COST.item} 0 ${ENHANCEMENT_COST.count}`);
             await player.runCommandAsync(`clear @s ${item.typeId} 0 1`);
             await player.runCommandAsync(`playsound random.break @s ~ ~ ~ 1 1`);
             await player.runCommandAsync(`playsound mob.wither.death @s ~ ~ ~ 0.5 0.5`);
@@ -268,7 +277,7 @@ async function enhanceItem(item, currentLevel = 0, player) {
             const itemConfig = ENHANCEABLE_ITEMS[item.typeId];
             const enchantments = itemConfig.enchantments[nextLevel];
 
-            await player.runCommandAsync(`clear @s emerald 0 1`);
+            await player.runCommandAsync(`clear @s ${ENHANCEMENT_COST.item} 0 ${ENHANCEMENT_COST.count}`);
 
             for (const [enchantType, level] of Object.entries(enchantments)) {
                 await player.runCommandAsync(`enchant @s ${enchantType} ${level}`);
