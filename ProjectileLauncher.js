@@ -1,23 +1,31 @@
 import { world, system } from "@minecraft/server";
 
-// 아이템 사용 이벤트 등록
+/*
+ * 사용 방법:
+ * 이 스크립트는 플레이어가 특정 아이템을 사용했을 때 여러 개의 화살을 발사하고,
+ * 발사된 화살이 블록에 충돌했을 때 폭발하도록 합니다.
+ * 
+ * 사용자가 수정할 수 있는 부분:
+ * - itemType: 화살을 발사하는 데 사용할 아이템의 종류를 설정합니다. 기본값은 "minecraft:clock"입니다.
+ * - baseSpeed: 화살의 기본 속도를 조정합니다. 기본값은 4입니다.
+ * - arrowCount: 발사할 화살의 개수를 조정합니다. 기본값은 5입니다.
+ * - angleSpread: 화살의 퍼짐 각도를 조정합니다. 기본값은 0.2입니다.
+ */
+
+const itemType = "minecraft:clock"; // 사용할 아이템 종류
+
+// 화살 발사 이벤트 (여러 개의 화살 발사)
 world.beforeEvents.itemUse.subscribe((event) => {
     const player = event.source;
 
-    // 아이템이 시계일 때만 실행
-    if (event.itemStack.typeId === "minecraft:clock") {
-        // 플레이어의 시선 방향 가져오기
+    // 아이템이 설정된 종류일 때만 실행
+    if (event.itemStack.typeId === itemType) {
         const viewDirection = player.getViewDirection();
-
-        // 기본 속도 설정
-        const baseSpeed = 7;
-
-        // 발사 개수 및 각도 조정
+        const baseSpeed = 4; // 화살의 기본 속도
         const arrowCount = 5; // 발사할 화살 개수
-        const angleSpread = 0.1; // 각도 차이 (값이 클수록 퍼짐)
+        const angleSpread = 0.2; // 퍼짐 각도
 
         for (let i = 0; i < arrowCount; i++) {
-            // 플레이어 앞쪽의 위치 계산
             const spawnPos = {
                 x: player.location.x + viewDirection.x,
                 y: player.location.y + 1.5,
@@ -29,10 +37,8 @@ world.beforeEvents.itemUse.subscribe((event) => {
             const offsetY = viewDirection.y + Math.random() * angleSpread - angleSpread / 2;
             const offsetZ = viewDirection.z + Math.random() * angleSpread - angleSpread / 2;
 
-            // 엔티티 생성 및 속도 설정
             system.run(() => {
                 try {
-                    // 투사체를 화살로 생성
                     const projectile = player.dimension.spawnEntity("minecraft:arrow", spawnPos);
 
                     // 속도 설정
@@ -41,12 +47,38 @@ world.beforeEvents.itemUse.subscribe((event) => {
                         y: offsetY * baseSpeed,
                         z: offsetZ * baseSpeed,
                     });
+
+                    // 태그 추가
+                    projectile.addTag("clock_shot"); // 시계로 발사된 화살에 태그 추가
                 } catch (error) {
-                    player.sendMessage(`§c오류 발생: ${error.message}`); // 오류 메시지
+                    player.sendMessage(`§c오류 발생: ${error.message}`);
                 }
             });
         }
 
-        player.sendMessage("§a여러 개의 화살을 발사했습니다!"); // 성공 메시지
+        player.sendMessage("§a여러 개의 화살을 발사했습니다!");
+    }
+});
+
+// 화살이 블록에 충돌했을 때 폭발
+world.afterEvents.projectileHitBlock.subscribe((event) => {
+    const projectile = event.projectile;
+
+    // 화살만 처리
+    if (projectile.typeId === "minecraft:arrow" && projectile.hasTag("clock_shot")) { // 태그 확인
+        const blockHit = event.getBlockHit();
+        if (blockHit) {
+            const hitLocation = blockHit.block.location;
+
+            // 비동기적으로 폭발 처리
+            system.run(() => {
+                if (projectile.isValid()) { // 화살이 유효한지 확인
+                    projectile.dimension.createExplosion(hitLocation, 4, {
+                        causesFire: false,
+                        breaksBlocks: true,
+                    });
+                }
+            });
+        }
     }
 });
