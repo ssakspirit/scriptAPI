@@ -6,6 +6,7 @@
  * 2. 인벤토리에 에메랄드가 1개 이상 있어야 합니다.
  * 3. 아이템을 들고 우클릭(사용)을 두 번 연속으로 합니다.
  * 4. 강화가 성공하면 인챈트가 강화되고, 실패하면 아이템이 파괴됩니다.
+ * 5. 우클릭을 했을 때 착용되는 갑옷과 같은 아이템은 핫바의 첫번째 슬롯에 위치 시킨 뒤 채팅명령어 '!아이템강화'를 입력하면 됩니다.
  * 
  * [ 강화 가능한 아이템 ]
  * - 철 등급: 검, 곡괭이, 도끼
@@ -352,3 +353,82 @@ world.afterEvents.itemUse.subscribe((event) => {
         player.sendMessage("§c강화 중 오류가 발생했습니다.");
     }
 });
+
+// 채팅 명령어 이벤트 처리 수정
+world.beforeEvents.chatSend.subscribe((event) => {
+    const player = event.sender;
+    const message = event.message.trim();
+
+    if (message === "!아이템강화") {
+        try {
+            // 첫 번째 슬롯의 아이템을 가져옴
+            const heldItem = getSelectedItem(player); // 수정된 부분
+            console.log("현재 슬롯 번호:", player.selectedSlot); // 현재 슬롯 번호 출력
+
+            if (!heldItem) {
+                player.sendMessage("§c손에 든 아이템이 없습니다.");
+                console.warn("선택된 슬롯에 아이템 없음:", player.selectedSlot);
+                return;
+            }
+
+            // 강화 가능한 아이템인지 확인
+            const itemConfig = ENHANCEABLE_ITEMS[heldItem.typeId];
+            if (!itemConfig) {
+                player.sendMessage("§c강화할 수 없는 아이템입니다.");
+                return; // 강화 불가능한 아이템이면 무시
+            }
+
+            // 현재 강화 단계 확인
+            const currentLevel = getCurrentLevel(heldItem, itemConfig);
+            
+            // 4단계인 경우 더 이상 강화 불가
+            if (currentLevel >= 4) {
+                player.runCommandAsync(`playsound note.bass @s ~ ~ ~ 1 0.5`);  // 낮은 음의 효과음
+                player.runCommandAsync(`playsound mob.villager.no @s ~ ~ ~ 1 1`);  // 실패 효과음
+                player.sendMessage("§c이미 최대 강화 단계입니다.");
+                return;
+            }
+
+            // 강화 아이템 확인
+            const inventory = player.getComponent("inventory");
+            let hasCostItem = false;
+            
+            for (let i = 0; i < inventory.container.size; i++) {
+                const slotItem = inventory.container.getItem(i);
+                if (slotItem?.typeId === ENHANCEMENT_COST.item && slotItem.amount >= ENHANCEMENT_COST.count) {
+                    hasCostItem = true;
+                    break;
+                }
+            }
+
+            if (!hasCostItem) {
+                player.sendMessage(`§c강화에 필요한 ${ENHANCEMENT_COST.displayName}가 부족합니다. (필요: ${ENHANCEMENT_COST.count}개)`);
+                return;
+            }
+
+            // 아이템 강화 시도
+            enhanceItem(heldItem, currentLevel, player).then(result => {
+                player.sendMessage(result.message);
+            }).catch(error => {
+                console.warn("강화 처리 중 오류:", error);
+                player.sendMessage("§c강화 중 오류가 발생했습니다.");
+            });
+
+        } catch (error) {
+            console.warn("아이템 강화 처리 중 오류:", error);
+            player.sendMessage("§c강화 중 오류가 발생했습니다.");
+        }
+    }
+});
+
+// 슬롯 번호를 가져오는 함수 수정
+function getSelectedItem(player) {
+    const inventory = player.getComponent("inventory");
+    if (inventory && inventory.container) {
+        return inventory.container.getItem(0); // 첫 번째 슬롯의 아이템 반환
+    }
+    return undefined;
+}
+
+
+
