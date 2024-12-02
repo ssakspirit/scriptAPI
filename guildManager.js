@@ -729,6 +729,19 @@ function updatePlayerNameTag(player) {
     }
 }
 
+//나침반 사용시 길드 UI 열기 '!길드'와 같은 기능
+world.beforeEvents.itemUse.subscribe(async (ev) => {
+    const item = ev.itemStack;
+    const player = ev.source;
+    const itemType = "minecraft:compass"; // 아이템 정하기
+    
+    // 아이템 조건 확인
+    if (item.typeId === itemType) {        
+        openGuildUI(player);
+        ev.cancel = true; // 기본 사용 동작 취소
+    }
+});
+
 // 채팅 이벤트 수정
 world.beforeEvents.chatSend.subscribe((ev) => {
     const player = ev.sender;
