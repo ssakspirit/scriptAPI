@@ -84,7 +84,7 @@ world.afterEvents.entityDie.subscribe((event) => {
         entity.runCommandAsync("gamemode spectator @s");
         
         // 사망한 플레이어의 이름 위에 표시
-        entity.nameTag = "c☠ §f" + entity.name + " §c☠";
+        entity.nameTag = "§c☠ §f" + entity.name + " §c☠";
         
         // 모든 플레이어에게 사망 메시지 표시
         world.getAllPlayers().forEach(player => {
