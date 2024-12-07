@@ -105,61 +105,107 @@ world.afterEvents.entityDie.subscribe((event) => {
         
         // 아머스탠드와 플레이어 매핑 저장
         const armorStandCheck = system.runInterval(() => {
-            // 해당 이름의 아머스탠드 찾기
-            const armorStands = [...world.getDimension("overworld").getEntities({
-                type: "armor_stand",
-                name: graveName
-            })];
-            
-            // 아머스탠드가 없다면 (부숴졌다면)
-            if (armorStands.length === 0 && tombMap.has(entity.name)) {
-                // 마지막 묘비 위치로 텔레포트
-                const lastLocation = tombMap.get(entity.name).location;
-                entity.teleport(lastLocation);
+            try {
+                // 플레이어가 여전히 온라인인지 확인
+                const onlinePlayer = world.getAllPlayers().find(p => p.name === entity.name);
+                if (!onlinePlayer) {
+                    system.clearRun(armorStandCheck);
+                    tombMap.delete(entity.name);
+                    return;
+                }
+
+                // 해당 이름의 아머스탠드 찾기
+                const armorStands = [...world.getDimension("overworld").getEntities({
+                    type: "armor_stand",
+                    name: graveName
+                })];
                 
-                // 플레이어 권한 변경
-                entity.runCommandAsync("gamemode survival @s");
-                // 이름태그 원래대로
-                entity.nameTag = entity.name;
-                entity.sendMessage("§a묘비가 파괴되어 다시 전투에 참여할 수 있습니다!");
-                
-                // 모든 플레이어에게 알림
-                world.getAllPlayers().forEach(p => {
-                    p.sendMessage(`§e${entity.name}님이 다시 전투에 참여합니다!`);
-                });
-                
-                // 인터벌 제거 및 매핑 제거
+                // 아머스탠드가 없다면 (부숴졌다면)
+                if (armorStands.length === 0 && tombMap.has(entity.name)) {
+                    // 마지막 묘비 위치로 텔레포트
+                    const lastLocation = tombMap.get(entity.name).location;
+                    entity.teleport(lastLocation);
+                    
+                    // 플레이어 권한 변경
+                    entity.runCommandAsync("gamemode survival @s");
+                    // 이름태그 원래대로
+                    entity.nameTag = entity.name;
+                    entity.sendMessage("§a묘비가 파괴되어 다시 전투에 참여할 수 있습니다!");
+                    
+                    // 모든 플레이어에게 알림
+                    world.getAllPlayers().forEach(p => {
+                        p.sendMessage(`§e${entity.name}님이 다시 전투에 참여합니다!`);
+                    });
+                    
+                    // 인터벌 제거 및 매핑 제거
+                    system.clearRun(armorStandCheck);
+                    tombMap.delete(entity.name);
+                    
+                    // 파티클 효과 제거
+                    if (particleMap.has(entity.name)) {
+                        system.clearRun(particleMap.get(entity.name));
+                        particleMap.delete(entity.name);
+                    }
+                }
+                // 아머스탠드가 있다면 매핑에 추가
+                else if (armorStands.length > 0 && !tombMap.has(entity.name)) {
+                    // 위치 정보를 포함하여 저장
+                    tombMap.set(entity.name, {
+                        interval: armorStandCheck,
+                        location: armorStands[0].location
+                    });
+                }
+            } catch (error) {
+                // 오류 발생 시 인터벌 정리
                 system.clearRun(armorStandCheck);
                 tombMap.delete(entity.name);
-                
-                // 파티클 효과 제거
-                if (particleMap.has(entity.name)) {
-                    system.clearRun(particleMap.get(entity.name));
-                    particleMap.delete(entity.name);
-                }
-            }
-            // 아머스탠드가 있다면 매핑에 추가
-            else if (armorStands.length > 0 && !tombMap.has(entity.name)) {
-                // 위치 정보를 포함하여 저장
-                tombMap.set(entity.name, {
-                    interval: armorStandCheck,
-                    location: armorStands[0].location
-                });
             }
         }, 10);
         
         // 파티클 효과
         const particleInterval = system.runInterval(() => {
-            // 파티클 효과 적용
-            entity.runCommandAsync(`execute at @s run particle minecraft:villager_angry ~ ~2 ~`);
-            entity.runCommandAsync(`execute at @s run particle minecraft:dragon_breath_trail ~ ~1 ~`);
-            // 묘비 주변에 여러 파티클 효과
-            const dimension = world.getDimension("overworld");
-            dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:endrod ~ ~0.5 ~`);
-            dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:basic_smoke_particle ~ ~0.3 ~`);
+            try {
+                // 플레이어가 여전히 온라인인지 확인
+                const onlinePlayer = world.getAllPlayers().find(p => p.name === entity.name);
+                if (!onlinePlayer) {
+                    system.clearRun(particleInterval);
+                    particleMap.delete(entity.name);
+                    return;
+                }
+
+                // 파티클 효과 적용
+                entity.runCommandAsync(`execute at @s run particle minecraft:villager_angry ~ ~2 ~`).catch(() => {});
+                entity.runCommandAsync(`execute at @s run particle minecraft:dragon_breath_trail ~ ~1 ~`).catch(() => {});
+                
+                // 묘비 주변에 여러 파티클 효과
+                const dimension = world.getDimension("overworld");
+                dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:endrod ~ ~0.5 ~`).catch(() => {});
+                dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:basic_smoke_particle ~ ~0.3 ~`).catch(() => {});
+            } catch (error) {
+                // 오류 발생 시 인터벌 정리
+                system.clearRun(particleInterval);
+                particleMap.delete(entity.name);
+            }
         }, 5);
         
         // 파티클 인터벌 저장
         particleMap.set(entity.name, particleInterval);
+    }
+});
+
+// 플레이어 퇴장 이벤트 추가
+world.afterEvents.playerLeave.subscribe((event) => {
+    const player = event.playerName;
+    
+    // 파티클 효과 제거
+    if (particleMap.has(player)) {
+        system.clearRun(particleMap.get(player));
+        particleMap.delete(player);
+    }
+    
+    // 인터벌 제거
+    if (tombMap.has(player)) {
+        system.clearRun(tombMap.get(player).interval);
+        tombMap.delete(player);
     }
 });
