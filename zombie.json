@@ -1,0 +1,69 @@
+// 플레이어를 추적하는 좀비
+{
+	"format_version": "1.20.0",
+	"minecraft:entity": {
+		"description": {
+			"identifier": "minecraft:zombie",
+			"is_spawnable": true,
+			"is_summonable": true,
+			"is_experimental": false
+		},
+		"component_groups": {},
+		"components": {
+			"minecraft:movement.basic": {},
+			"minecraft:movement": {
+				"value": 0.23
+			},
+			"minecraft:navigation.walk": {
+				"can_path_over_water": true,
+				"avoid_water": true,
+				"can_walk": true,
+				"can_break_doors": true,
+				"avoid_damage_blocks": true,
+				"can_jump": true,
+				"can_sink": false,
+				"blocks_to_avoid": [],
+				"jump_prevention": []
+			},
+			"minecraft:jump.static": {
+				"jump_power": 0.42
+			},
+			"minecraft:attack": {
+				"damage": 3
+			},
+			"minecraft:behavior.melee_attack": {
+				"priority": 3,
+				"speed_multiplier": 1,
+				"track_target": true
+			},
+			"minecraft:behavior.move_towards_target": {
+				"priority": 2,
+				"speed_multiplier": 0.9
+			},
+			"minecraft:behavior.nearest_attackable_target": {
+				"priority": 1,
+				"must_see": false,
+				"within_radius": 300,
+				"must_see_forget_duration": 3,
+				"entity_types": [
+					{
+						"filters": {
+							"test": "is_family",
+							"subject": "other",
+							"value": "player"
+						},
+						"max_dist": 300
+					}
+				]
+			},
+			"minecraft:persistent": {},
+			"minecraft:physics": {},
+			"minecraft:pushable": {},
+			"minecraft:follow_range": {
+				"value": 300,
+				"max": 300
+			}
+		},
+		"events": {}
+	}
+}
