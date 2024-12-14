@@ -111,13 +111,6 @@ const SKILL_ITEMS = {
                     player.runCommand(`summon snowball ${pos}`);
                 });
                 
-                // 시각 효과를 위해 파티클 추가
-                player.runCommand(`particle minecraft:splash ~ ~0.5 ~`);
-                player.runCommand(`particle minecraft:splash ~ ~0.5 ~1`);
-                player.runCommand(`particle minecraft:splash ~1 ~0.5 ~`);
-                player.runCommand(`particle minecraft:splash ~ ~0.5 ~-1`);
-                player.runCommand(`particle minecraft:splash ~-1 ~0.5 ~`);
-
                 world.sendMessage(`§b${player.name}님이 강력한 얼음 스킬을 사용했습니다!`);
                 
                 // 쿨타임 시작
