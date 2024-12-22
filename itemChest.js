@@ -76,7 +76,7 @@ function getRandomItems() {
     for (let i = 0; i < numItems && availableItems.length > 0; i++) {
         const randomIndex = Math.floor(Math.random() * availableItems.length);
         selectedItems.push(availableItems[randomIndex]);
-        availableItems.splice(randomIndex, 1); // 선택된 아이템 제거하여 중��� 방지
+        availableItems.splice(randomIndex, 1); // 선택된 아이템 제거하여 중복복 방지
     }
 
     return selectedItems;
