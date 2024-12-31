@@ -26,30 +26,44 @@ world.beforeEvents.itemUse.subscribe((event) => {
         const angleSpread = 0.2; // 퍼짐 각도
 
         for (let i = 0; i < arrowCount; i++) {
+            // 화레이어의 시선 방향 벡터 가져오기
+            const viewDirection = player.getViewDirection();
+            
+            // 화살 생성 위치 계산 (플레이어 머리 위에서 시작)
             const spawnPos = {
-                x: player.location.x + viewDirection.x,
-                y: player.location.y + 1.5,
-                z: player.location.z + viewDirection.z,
+                x: player.location.x + viewDirection.x * 2,  // 2블록 앞으로
+                y: player.location.y + 1.8 + viewDirection.y * 2,  // 머리 위 + 시선 방향
+                z: player.location.z + viewDirection.z * 2   // 2블록 앞으로
             };
 
-            // 각도 오프셋 계산
+            // 각도 오프셋 계산 (시선 방향 기준)
             const offsetX = viewDirection.x + Math.random() * angleSpread - angleSpread / 2;
             const offsetY = viewDirection.y + Math.random() * angleSpread - angleSpread / 2;
             const offsetZ = viewDirection.z + Math.random() * angleSpread - angleSpread / 2;
 
+            // 방향 벡터 정규화
+            const length = Math.sqrt(offsetX * offsetX + offsetY * offsetY + offsetZ * offsetZ);
+            const normalizedDirection = {
+                x: offsetX / length,
+                y: offsetY / length,
+                z: offsetZ / length
+            };
+
             system.run(() => {
                 try {
                     const projectile = player.dimension.spawnEntity("minecraft:arrow", spawnPos);
+                    
+                    // 화살의 소유자를 플레이어로 설정
+                    projectile.owner = player;
 
-                    // 속도 설정
+                    // 정규화된 방향으로 속도 적용
                     projectile.applyImpulse({
-                        x: offsetX * baseSpeed,
-                        y: offsetY * baseSpeed,
-                        z: offsetZ * baseSpeed,
+                        x: normalizedDirection.x * baseSpeed,
+                        y: normalizedDirection.y * baseSpeed,
+                        z: normalizedDirection.z * baseSpeed,
                     });
 
-                    // 태그 추가
-                    projectile.addTag("clock_shot"); // 시계로 발사된 화살에 태그 추가
+                    projectile.addTag("clock_shot");
                 } catch (error) {
                     player.sendMessage(`§c오류 발생: ${error.message}`);
                 }
