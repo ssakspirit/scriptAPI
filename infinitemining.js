@@ -24,11 +24,15 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
     const blockPos = event.block.location;
     
     // 파괴된 블록이 재생성 목록에 있는지 확인
-    if (RESPAWN_BLOCKS.includes(block.type.id)) {
-        // 약간의 딜레이 후 블록 재생성 (0.5초)
+    if (RESPAWN_BLOCKS.includes(block.type.id)) {        
+        // 1초 후에 실행되는 함수를 설정합니다.
         system.runTimeout(() => {
+            // 플레이어의 현재 차원을 가져옵니다.
             const dimension = event.player.dimension;
-            dimension.getBlock(blockPos).setPermutation(block);
+            // 파괴된 블록의 위치에서 블록을 가져옵니다.
+            const blockAtPos = dimension.getBlock(blockPos);
+            // 파괴된 블록의 상태로 블록을 설정합니다.
+            blockAtPos.setPermutation(block);
         }, 1);
     }
 });
