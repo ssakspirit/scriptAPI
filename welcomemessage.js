@@ -138,10 +138,12 @@ world.afterEvents.playerSpawn.subscribe((eventData) => {
         world.sendMessage(`§e새로운 플레이어 ${player.name}님이 서버에 처음 오셨습니다!`);
         player.sendMessage("§a환영합니다! 서버의 규칙을 확인해주세요!");
         
+        //시작 아이템을 없애고 싶다면 아래 코드를 지우세요.
         // 시작 아이템 UI 표시
         system.runTimeout(() => {
             showStarterKitUI(player);
         }, 40); // 2초 후에 UI 표시
+        //시작 아이템을 없애고 싶다면 여기까지 코드를 지우세요.
     } else {
         world.sendMessage(`§b${player.name}님이 서버에 다시 접속하셨습니다.`);
         player.sendMessage("§a다시 오신 것을 환영합니다!");
