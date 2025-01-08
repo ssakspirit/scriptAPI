@@ -21,12 +21,27 @@ import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/serve
  *    - 가입 요청 관리: 길드 가입 요청을 수락하거나 거절할 수 있습니다.
  *    - 길드원 관리: 길드원을 추방할 수 있습니다.
  * 
- * 4. 관리자 기능:
+ * 4. 관리자 기능 ('admin' 태그 필요):
  *    - 길드 삭제: 서버의 모든 길드를 삭제할 수 있습니다.
+ *    - 길드 채팅 모니터링: 모든 길드의 내부 채팅을 볼 수 있습니다.
+ *    - 관리자 모드 표시: 길드 채팅을 볼 때 관리자 모드로 표시됩니다.
  * 
  * 5. 기타 기능:
  *    - 길드 채팅: 길드원들끼리 비공개 채팅을 할 수 있습니다.
  *    - 이름 태그: 길드에 가입한 플레이어의 이름 위에 길드 이름이 표시됩니다.
+ * 
+ * 관리자 권한 설정 방법:
+ * 1. 플레이어에게 'admin' 태그 부여:
+ *    - /tag [플레이어이름] add admin
+ * 2. 관리자 권한 제거:
+ *    - /tag [플레이어이름] remove admin
+ * 
+ * 관리자 기능 사용법:
+ * 1. 길드 채팅 모니터링:
+ *    - admin 태그가 있는 플레이어는 자동으로 모든 길드의 채팅을 볼 수 있습니다
+ *    - 관리자 모드로 보이는 메시지는 [관리자 모드] 태그가 붙습니다
+ * 2. 길드 삭제:
+ *    - !관리자 명령어로 관리자 메뉴를 열어 길드를 삭제할 수 있습니다
  * 
  * 주의: 이 스크립트를 사용하려면 행동 팩의 manifest.json 파일에 
  * "@minecraft/server"와 "@minecraft/server-ui" 모듈에 대한 종속성을 추가해야 합니다.
@@ -74,10 +89,10 @@ function createGuild(player, guildName, guildDescription) {
         joinRequests: []
     };
     saveGuilds(guilds);
-    
+
     // 길드 생성 직후 플레이어의 이름 태그 업데이트
     updatePlayerNameTag(player);
-    
+
     return true;
 }
 
@@ -121,12 +136,12 @@ function leaveGuild(player) {
         return false; // 입한 길드 없음
     }
     const guild = guilds[playerGuildName];
-    
+
     if (guild.leader === player.name) {
         // 길드장이 탈퇴하는 경우 길드 해체
         delete guilds[playerGuildName];
         saveGuilds(guilds);
-        
+
         // 모든 길드원의 이름 태그 초기화
         for (const memberName of guild.members) {
             const member = world.getAllPlayers().find(p => p.name === memberName);
@@ -292,7 +307,7 @@ function leaveGuildUI(player) {
 function guildInfoUI(player) {
     try {
         const guilds = getGuilds();
-        
+
         if (Object.keys(guilds).length === 0) {
             player.sendMessage("§c현재 생성된 길드가 없습니다.");
             return;
@@ -311,7 +326,7 @@ function guildInfoUI(player) {
         } else {
             guildInfo += "§c당신은 현재 어떤 길드에도 속해있지 않습니다.\n\n§l§6길드 목록:§r\n\n";
         }
-        
+
         for (const [guildName, guildData] of Object.entries(guilds)) {
             if (playerGuildName && guildName === playerGuildName) continue;
             guildInfo += `§e길드: §b${guildName}\n§e길드장: §a${guildData.leader}\n§e설명: §f${guildData.description}\n§e길드원: §f${guildData.members.join(', ')}\n§r\n`;
@@ -632,7 +647,7 @@ function manageJoinRequestsUI(player) {
 
     const form = new ActionFormData()
         .title("가입 요청 관리")
-        .body(`${playerGuildName} 길드의 가입 요청 목록입니다. 처리할 요청을 선택하세요.`);
+        .body(`${playerGuildName} 길드의 가입 요청 목록입니다. 처처리할 요청을 선택하세요.`);
 
     guild.joinRequests.forEach(requester => {
         form.button(requester);
@@ -734,9 +749,9 @@ world.beforeEvents.itemUse.subscribe(async (ev) => {
     const item = ev.itemStack;
     const player = ev.source;
     const itemType = "minecraft:compass"; // 아이템 정하기
-    
+
     // 아이템 조건 확인
-    if (item.typeId === itemType) {        
+    if (item.typeId === itemType) {
         openGuildUI(player);
         ev.cancel = true; // 기본 사용 동작 취소
     }
@@ -770,7 +785,18 @@ world.beforeEvents.chatSend.subscribe((ev) => {
         const guildName = getPlayerGuild(player.name);
         if (guildName) {
             ev.cancel = true;
-            world.sendMessage(`§8[§6${guildName}§8] §f${player.name}: ${message}`);
+            const globalMessage = `§8[§6${guildName}§8] §f${player.name}: ${message}`;
+            world.sendMessage(globalMessage);
+            
+            // 관리자들에게 길드 태그 표시
+            for (const admin of world.getAllPlayers()) {
+                if (admin.hasTag("admin") && !getGuilds()[guildName].members.includes(admin.name)) {
+                    admin.sendMessage(`§8[§c관리자 모드§8] ${globalMessage}`);
+                }
+            }
+        } else {
+            // 일반 채팅은 그대로 처리
+            world.sendMessage(`${player.name}: ${message}`);
         }
     }
 });
@@ -785,13 +811,21 @@ function sendGuildMessage(player, message) {
 
     const guilds = getGuilds();
     const guild = guilds[guildName];
-    
+
     const guildMessage = `§8[§6${guildName}§8] §a[길드] §f${player.name}: ${message}`;
-    
+
+    // 길드원들에게 메시지 전송
     for (const memberName of guild.members) {
         const member = world.getAllPlayers().find(p => p.name === memberName);
         if (member) {
             member.sendMessage(guildMessage);
+        }
+    }
+
+    // 관리자들에게도 메시지 전송 (길드원이 아닌 경우에만)
+    for (const admin of world.getAllPlayers()) {
+        if (admin.hasTag("admin") && !guild.members.includes(admin.name)) {
+            admin.sendMessage(`§8[§c관리자 모드§8] ${guildMessage}`);
         }
     }
 }
@@ -904,7 +938,7 @@ function deleteGuild(player, guildName) {
     }
 
     const guild = guilds[guildName];
-    
+
     // 모든 길드원에게 알림
     for (const memberName of guild.members) {
         const member = world.getAllPlayers().find(p => p.name === memberName);
@@ -920,4 +954,3 @@ function deleteGuild(player, guildName) {
 
     player.sendMessage(`§a'${guildName}' 길드를 성공적으로 삭제했습니다.`);
 }
-
