@@ -130,16 +130,21 @@ class PlayerEnhancement {
         const cost = this.enhancementConfig[level].cost;
         
         try {
-            // system.run 사용
-            const result = await system.run(async () => {
-                try {
-                    await player.runCommand(`testfor @s[hasitem={item=minecraft:emerald,quantity=${cost.emerald}}]`);
-                    return true;
-                } catch {
-                    return false;
+            // 인벤토리에서 에메랄드 개수 확인
+            const inventory = player.getComponent("inventory").container;
+            let emeraldCount = 0;
+            
+            // 모든 슬롯 확인
+            for (let i = 0; i < inventory.size; i++) {
+                const item = inventory.getItem(i);
+                if (item?.typeId === "minecraft:emerald") {
+                    emeraldCount += item.amount;
                 }
-            });
-            return result;
+            }
+            
+            // 필요한 에메랄드 개수와 비교
+            return emeraldCount >= cost.emerald;
+            
         } catch (error) {
             console.warn("에메랄드 확인 중 오류:", error);
             return false;
@@ -150,10 +155,24 @@ class PlayerEnhancement {
     async consumeCost(player, level) {
         const cost = this.enhancementConfig[level].cost;
         try {
-            await system.run(async () => {
-                player.runCommand(`clear @s minecraft:emerald 0 ${cost.emerald}`);
-
-            });
+            // 인벤토리에서 에메랄드 제거
+            const inventory = player.getComponent("inventory").container;
+            let remainingCost = cost.emerald;
+            
+            // 모든 슬롯 확인하면서 에메랄드 제거
+            for (let i = 0; i < inventory.size && remainingCost > 0; i++) {
+                const item = inventory.getItem(i);
+                if (item?.typeId === "minecraft:emerald") {
+                    const removeAmount = Math.min(item.amount, remainingCost);
+                    if (removeAmount === item.amount) {
+                        inventory.setItem(i, undefined); // 슬롯 비우기
+                    } else {
+                        item.amount -= removeAmount;
+                        inventory.setItem(i, item);
+                    }
+                    remainingCost -= removeAmount;
+                }
+            }
         } catch (error) {
             console.warn("비용 소비 중 오류:", error);
         }
