@@ -32,6 +32,10 @@
 [ 예시 ]
 - 철검(날카로움 3)을 다이아몬드 검으로 강화 시도 → 성공하면 다이아몬드 검(날카로움 3)
 - 다이아몬드 곡괭이(효율 4)를 철 곡괭이로 다운그레이드 → 철 곡괭이(효율 4)
+
+[ 설정 옵션 ]
+- DESTROY_ON_FAIL: true로 설정하면 강화 실패 시 아이템이 파괴됩니다.
+                   false로 설정하면 강화 실패 시 아이템이 유지됩니다.
 */
 
 import { world, system } from '@minecraft/server';
@@ -225,6 +229,11 @@ function showExchangeShop(player) {
     }, 20);
 }
 
+// 시스템 설정
+const SYSTEM_CONFIG = {
+    DESTROY_ON_FAIL: true,  // true: 실패 시 아이템 파괴, false: 실패 시 아이템 유지
+};
+
 // 아이템 교체 실행
 async function exchangeItem(player, currentItem, newItemId, cost) {
     try {
@@ -248,12 +257,20 @@ async function exchangeItem(player, currentItem, newItemId, cost) {
         const isSuccess = Math.random() * 100 <= chance;
 
         if (!isSuccess) {
-            const inventory = player.getComponent("inventory");
-            if (inventory) {
-                inventory.container.setItem(0, undefined);
-            }
+            // 에메랄드 차감
             await player.runCommandAsync(`clear @s emerald 0 ${cost}`);
-            player.sendMessage(`§c${isUpgrading ? '강화' : '다운그레이드'} 실패! 아이템이 파괴되었습니다. (성공 확률: ${chance}%)`);
+
+            if (SYSTEM_CONFIG.DESTROY_ON_FAIL) {
+                // 아이템 파괴 설정이 켜져있을 때만 아이템 제거
+                const inventory = player.getComponent("inventory");
+                if (inventory) {
+                    inventory.container.setItem(0, undefined);
+                }
+                player.sendMessage(`§c${isUpgrading ? '강화' : '다운그레이드'} 실패! 아이템이 파괴되었습니다. (성공 확률: ${chance}%)`);
+            } else {
+                // 아이템 파괴 설정이 꺼져있을 때는 아이템 유지
+                player.sendMessage(`§c${isUpgrading ? '강화' : '다운그레이드'} 실패! 아이템은 유지됩니다. (성공 확률: ${chance}%)`);
+            }
             return;
         }
 
