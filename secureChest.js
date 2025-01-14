@@ -97,14 +97,51 @@ function getItem(player) {
     }
 }
 
-// 상자/배럴 열기 이벤트
+// 상자 연결 확인 함수 추가
+function getConnectedChestPositions(block) {
+    const pos = block.location;
+    const positions = [`${pos.x},${pos.y},${pos.z}`];
+    
+    // 상자가 아니면 단일 위치만 반환
+    if (block.typeId !== "minecraft:chest") {
+        return positions;
+    }
+
+    // 주변 블록 확인 (동, 서, 남, 북)
+    const directions = [
+        { x: 1, z: 0 },  // 동
+        { x: -1, z: 0 }, // 서
+        { x: 0, z: 1 },  // 남
+        { x: 0, z: -1 }  // 북
+    ];
+
+    for (const dir of directions) {
+        const nearbyBlock = block.dimension.getBlock({ 
+            x: pos.x + dir.x, 
+            y: pos.y, 
+            z: pos.z + dir.z 
+        });
+        
+        if (nearbyBlock && nearbyBlock.typeId === "minecraft:chest") {
+            positions.push(`${nearbyBlock.location.x},${nearbyBlock.location.y},${nearbyBlock.location.z}`);
+        }
+    }
+
+    return positions;
+}
+
+// 상자/배럴 열기 이벤트 수정
 world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
     const player = event.player;
     const block = event.block;
     
     if (block.typeId !== "minecraft:barrel" && block.typeId !== "minecraft:chest") return;
     
-    const containerPos = `${block.location.x},${block.location.y},${block.location.z}`;
+    // 모든 연결된 상자 위치 확인
+    const containerPositions = getConnectedChestPositions(block);
+    const isLocked = containerPositions.some(pos => lockedContainers.has(pos));
+    const currentPos = `${block.location.x},${block.location.y},${block.location.z}`;
+    
     const item = getItem(player);
 
     // 황금열쇠로 상호작용하는 경우
@@ -112,14 +149,18 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
         event.cancel = true;
         
         // 이미 잠긴 컨테이너인 경우
-        if (lockedContainers.has(containerPos)) {
-            lockedContainers.delete(containerPos);
+        if (isLocked) {
+            // 모든 연결된 상자의 잠금 해제
+            containerPositions.forEach(pos => {
+                lockedContainers.delete(pos);
+            });
             player.sendMessage("§a컨테이너의 잠금이 해제되었습니다!");
-            saveData(); // 데이터 저장
+            saveData();
         } else {
             // 새로운 비밀번호 설정 시작
             passwordStates.set(player.name, {
-                containerPos: containerPos,
+                containerPos: currentPos,
+                connectedPositions: containerPositions,
                 state: PasswordState.SETTING
             });
             player.sendMessage("§e채팅창에 설정할 비밀번호를 입력하세요.");
@@ -128,14 +169,22 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
     }
     
     // 잠긴 컨테이너인 경우
-    if (lockedContainers.has(containerPos)) {
-        const container = lockedContainers.get(containerPos);
-        
+    if (isLocked) {
+        const container = containerPositions
+            .map(pos => lockedContainers.get(pos))
+            .find(c => c !== undefined);
+            
         // 비밀번호를 맞추고 한 번도 열지 않은 경우
-        if (container.canOpen) {
-            container.canOpen = false; // 한 번 열었으므로 플래그 해제
-            lockedContainers.set(containerPos, container);
-            saveData(); // 데이터 저장
+        if (container && container.canOpen) {
+            container.canOpen = false;
+            containerPositions.forEach(pos => {
+                if (lockedContainers.has(pos)) {
+                    const cont = lockedContainers.get(pos);
+                    cont.canOpen = false;
+                    lockedContainers.set(pos, cont);
+                }
+            });
+            saveData();
             return; // 상자를 열 수 있음
         }
         
@@ -143,7 +192,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
         // 비밀번호 입력 상태가 아닌 경우에만 메시지 표시
         if (!passwordStates.has(player.name)) {
             passwordStates.set(player.name, {
-                containerPos: containerPos,
+                containerPos: currentPos,
+                connectedPositions: containerPositions,
                 state: PasswordState.UNLOCKING
             });
             player.sendMessage("§e채팅창에 비밀번호를 입력하세요.");
@@ -162,23 +212,32 @@ world.beforeEvents.chatSend.subscribe((event) => {
     
     const state = passwordStates.get(player.name);
     const containerPos = state.containerPos;
+    const connectedPositions = state.connectedPositions;
     
     if (state.state === PasswordState.SETTING) {
-        // 새 비밀번호 설정
-        lockedContainers.set(containerPos, {
-            password: message,
-            canOpen: false
+        // 모든 연결된 상자에 비밀번호 설정
+        connectedPositions.forEach(pos => {
+            lockedContainers.set(pos, {
+                password: message,
+                canOpen: false
+            });
         });
         player.sendMessage("§a비밀번호가 설정되었습니다!");
-        saveData(); // 데이터 저장
+        saveData();
     } else if (state.state === PasswordState.UNLOCKING) {
         // 비밀번호 확인
         const container = lockedContainers.get(containerPos);
         if (container && container.password === message) {
             player.sendMessage("§a비밀번호가 확인되었습니다. 컨테이너를 열 수 있습니다!");
-            container.canOpen = true;
-            lockedContainers.set(containerPos, container);
-            saveData(); // 데이터 저장
+            // 모든 연결된 상자에 대해 열기 권한 부여
+            connectedPositions.forEach(pos => {
+                if (lockedContainers.has(pos)) {
+                    const cont = lockedContainers.get(pos);
+                    cont.canOpen = true;
+                    lockedContainers.set(pos, cont);
+                }
+            });
+            saveData();
         } else {
             player.sendMessage("§c잘못된 비밀번호입니다!");
         }
