@@ -8,7 +8,7 @@
  * 3. 관리자가 쿠폰 생성 및 보상 설정 가능
  * 
  * [ 플레이어 사용 방법 ]
- * 1. 나침반을 들고 우클릭하여 쿠폰 입력 창을 엽니다
+ * 1. 나침반을 들고 우클릭하여 쿠폰 입력 창을 엽니다(또는 !쿠폰 채팅명령을 입력합니다.)
  * 2. 쿠폰 코드를 입력하고 확인을 누릅니다
  * 3. 쿠폰이 유효하면 즉시 보상이 지급됩니다
  * 4. 이미 사용한 쿠폰은 재사용할 수 없습니다
@@ -433,6 +433,17 @@ world.beforeEvents.chatSend.subscribe((event) => {
     if (message.startsWith('!')) {
         event.cancel = true;  // 채팅 메시지 취소
 
+        // 쿠폰 사용 명령어 (!쿠폰 [코드])
+        if (message.startsWith('!쿠폰 ')) {
+            const couponCode = message.substring(4).trim(); // '!쿠폰 ' 이후의 텍스트
+            if (couponCode) {
+                useCoupon(player, couponCode);
+            } else {
+                player.sendMessage("§c사용법: !쿠폰 [쿠폰코드]");
+            }
+            return;
+        }
+
         // 관리자 명령어
         if (isAdmin(player)) {
             switch (message) {
@@ -447,7 +458,7 @@ world.beforeEvents.chatSend.subscribe((event) => {
                     player.sendMessage("§c알 수 없는 명령어입니다.");
                     return;
             }
-        } else {
+        } else if (message === "!쿠폰관리" || message === "!쿠폰목록") {
             player.sendMessage("§c이 명령어를 사용할 권한이 없습니다.");
             return;
         }
