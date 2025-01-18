@@ -2,7 +2,7 @@ import { world, system } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
 /**
- * 커스텀 인챈트 시스템 v2.3
+ * 커스텀 인챈트 시스템 v2.2
  * 
  * [ 사용 방법 ]
  * 1. 기본 사용법
@@ -845,37 +845,6 @@ world.beforeEvents.itemUse.subscribe((event) => {
 
                 startCooldown(player, "SWORD_WAVE");
                 shouldCancelEvent = true;
-            }
-        }
-
-        // 맹독 효과
-        const poisonLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.DEADLY_POISON.id));
-        if (poisonLine) {
-            try {
-                // 디버깅: 타격된 엔티티 정보
-                console.warn(`타격된 엔티티 정보: ${hitEntity.typeId}`);
-                
-                // 디버깅: 위더 효과 명령어 실행
-                const effectCommand = "effect @s wither 4 1";
-                console.warn(`실행할 명령어: ${effectCommand}`);
-                
-                // 위더 효과 적용
-                hitEntity.dimension.runCommand(effectCommand);
-                console.warn("위더 효과 적용 완료");
-                
-                // 파티클 효과
-                const loc = hitEntity.location;
-                hitEntity.dimension.runCommand(`particle minecraft:large_smoke ~ ~1 ~`);
-                console.warn("파티클 효과 적용 완료");
-                
-                // 사운드 효과
-                hitEntity.dimension.runCommand(`playsound mob.wither.shoot @a ~ ~ ~ 0.3 1.5`);
-                console.warn("사운드 효과 적용 완료");
-                
-            } catch (error) {
-                // 오류 메시지를 문자열로 변환하여 출력
-                const errorMessage = typeof error === 'string' ? error : error.message || '알 수 없는 오류';
-                console.warn(`맹독 효과 처리 중 오류 발생: ${errorMessage}`);
             }
         }
 
