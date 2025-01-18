@@ -2,7 +2,7 @@ import { world, system } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
 /**
- * 커스텀 인챈트 시스템 v2.0
+ * 커스텀 인챈트 시스템 v2.1
  * 
  * [ 사용 방법 ]
  * 1. 기본 사용법
@@ -103,11 +103,11 @@ class CooldownManager {
     isOnCooldown(player, enchantId) {
         const key = `${player.name}-${enchantId}`;
         const cooldownInfo = this.cooldowns.get(key);
-        
+
         if (cooldownInfo && cooldownInfo.endTime > Date.now()) {
             return true;
         }
-        
+
         if (cooldownInfo) {
             this.cooldowns.delete(key); // 만료된 쿨타임 제거
         }
@@ -136,7 +136,7 @@ class CooldownManager {
     getRemainingTime(player, enchantId) {
         const key = `${player.name}-${enchantId}`;
         const cooldownInfo = this.cooldowns.get(key);
-        
+
         if (cooldownInfo && cooldownInfo.endTime > Date.now()) {
             return Math.ceil((cooldownInfo.endTime - Date.now()) / 1000);
         }
@@ -151,9 +151,7 @@ const cooldownManager = new CooldownManager();
 const ENCHANT_CONFIG = {
     ENCHANT_ITEM: "minecraft:nether_star",    // 인챈트 UI를 열 아이템
     MAX_LEVEL: 5,                             // 최대 인챈트 레벨
-    FAIL_CHANCE: 0.2,                         // 실패 확률 (20%)
-    BREAK_CHANCE: 0.1,                        // 아이템 파괴 확률 (10%)
-    COST_MULTIPLIER: 2                        // 레벨당 비용 증가 배율
+    BREAK_CHANCE: 0.1                         // 실패 시 아이템 파괴 확률 (10%)
 };
 
 // 커스텀 인챈트 정의
@@ -162,7 +160,10 @@ const CUSTOM_ENCHANTS = {
         id: "griswolds_curse",
         name: "그리스월드의 저주",
         description: "보는 방향으로 번개와 폭발을 일으킵니다",
-        baseCost: 10,
+        baseCost: 10,                         // 기본 비용
+        costIncrease: 8,                      // 레벨당 비용 증가량
+        baseSuccessChance: 0.75,              // 1레벨 성공 확률 (75%)
+        levelPenalty: 0.2,                    // 레벨당 성공 확률 감소율 (20%)
         maxLevel: 3,
         cooldown: 10,
         allowedItems: ["minecraft:diamond_sword", "minecraft:netherite_sword", "minecraft:diamond_axe", "minecraft:netherite_axe"]
@@ -172,6 +173,9 @@ const CUSTOM_ENCHANTS = {
         name: "양치기의 분노",
         description: "주변의 모든 엔티티를 양으로 변환합니다",
         baseCost: 15,
+        costIncrease: 10,                     // 더 높은 비용 증가
+        baseSuccessChance: 0.7,               // 더 낮은 기본 성공률
+        levelPenalty: 0.15,
         maxLevel: 3,
         cooldown: 20,
         allowedItems: ["minecraft:diamond_hoe", "minecraft:netherite_hoe"]
@@ -181,6 +185,9 @@ const CUSTOM_ENCHANTS = {
         name: "얼음의 유산",
         description: "주변 몹에게 슬로우 효과를 주고 눈덩이를 떨어뜨립니다",
         baseCost: 8,
+        costIncrease: 6,
+        baseSuccessChance: 0.85,              // 더 높은 기본 성공률
+        levelPenalty: 0.1,                    // 더 낮은 페널티
         maxLevel: 3,
         cooldown: 15,
         allowedItems: ["minecraft:diamond_sword", "minecraft:netherite_sword", "minecraft:diamond_axe", "minecraft:netherite_axe"]
@@ -190,6 +197,9 @@ const CUSTOM_ENCHANTS = {
         name: "엘사의 격려",
         description: "주변의 물을 얼음으로 변환합니다",
         baseCost: 12,
+        costIncrease: 7,
+        baseSuccessChance: 0.8,
+        levelPenalty: 0.15,
         maxLevel: 3,
         allowedItems: ["minecraft:diamond_sword", "minecraft:netherite_sword", "minecraft:diamond_axe", "minecraft:netherite_axe"]
     },
@@ -198,6 +208,9 @@ const CUSTOM_ENCHANTS = {
         name: "신속의 부츠",
         description: "이동 속도가 증가합니다",
         baseCost: 8,
+        costIncrease: 5,
+        baseSuccessChance: 0.9,               // 매우 높은 기본 성공률
+        levelPenalty: 0.1,                    // 낮은 페널티
         maxLevel: 3,
         allowedItems: ["minecraft:diamond_boots", "minecraft:netherite_boots"]
     },
@@ -206,6 +219,9 @@ const CUSTOM_ENCHANTS = {
         name: "도약의 부츠",
         description: "점프력이 증가합니다",
         baseCost: 8,
+        costIncrease: 5,
+        baseSuccessChance: 0.9,               // 매우 높은 기본 성공률
+        levelPenalty: 0.1,                    // 낮은 페널티
         maxLevel: 2,
         allowedItems: ["minecraft:diamond_boots", "minecraft:netherite_boots"]
     },
@@ -214,6 +230,9 @@ const CUSTOM_ENCHANTS = {
         name: "철벽치기",
         description: "주변의 적들을 강력하게 밀쳐냅니다",
         baseCost: 12,
+        costIncrease: 8,                      // 높은 비용 증가
+        baseSuccessChance: 0.8,               // 중간 성공률
+        levelPenalty: 0.15,                   // 중간 페널티
         maxLevel: 3,
         cooldown: 3,
         allowedItems: ["minecraft:diamond_sword", "minecraft:netherite_sword", "minecraft:diamond_axe", "minecraft:netherite_axe"]
@@ -223,8 +242,34 @@ const CUSTOM_ENCHANTS = {
         name: "스티브의 추진력",
         description: "보는 방향으로 빠르게 대쉬합니다",
         baseCost: 10,
+        costIncrease: 7,                      // 중간 비용 증가
+        baseSuccessChance: 0.85,              // 높은 성공률
+        levelPenalty: 0.12,                   // 낮은-중간 페널티
         maxLevel: 3,
         allowedItems: ["minecraft:diamond_sword", "minecraft:netherite_sword", "minecraft:diamond_axe", "minecraft:netherite_axe"]
+    },
+    SWORD_WAVE: {
+        id: "sword_wave",
+        name: "검기",
+        description: "바라보는 방향으로 강력한 검기를 발사합니다",
+        baseCost: 15,                         // 1레벨 비용: 15 에메랄드
+        costIncrease: 20,                     // 레벨당 20 에메랄드 증가
+        baseSuccessChance: 0.6,               // 1레벨 성공 확률: 60%
+        levelPenalty: 0.2,                    // 레벨당 20% 감소
+        maxLevel: 3,
+        cooldown: 7,
+        allowedItems: ["minecraft:diamond_sword", "minecraft:netherite_sword"]
+    },
+    DEADLY_POISON: {
+        id: "deadly_poison",
+        name: "맹독",
+        description: "타격 시 독 효과를 부여합니다",
+        baseCost: 20,                         // 1레벨 비용: 20 에메랄드
+        costIncrease: 5,                     // 레벨당 5 에메랄드 증가
+        baseSuccessChance: 0.7,               // 1레벨 성공 확률: 70%
+        levelPenalty: 0.5,                   // 레벨당 5% 감소
+        maxLevel: 4,
+        allowedItems: ["minecraft:diamond_sword", "minecraft:netherite_sword"]
     }
 };
 
@@ -241,13 +286,13 @@ function startCooldown(player, enchantId) {
 system.runInterval(() => {
     for (const player of world.getAllPlayers()) {
         const activeCooldowns = cooldownManager.getPlayerCooldowns(player);
-        
+
         if (activeCooldowns.length > 0) {
             const cooldownTexts = activeCooldowns.map(cooldown => {
                 const enchant = CUSTOM_ENCHANTS[cooldown.enchantId];
                 return `§b${enchant.name}: §f${cooldown.remainingTime}초`;
             });
-            
+
             const actionBarText = cooldownTexts.join(" §7| ");
             player.onScreenDisplay.setActionBar(actionBarText);
         }
@@ -258,7 +303,7 @@ system.runInterval(() => {
 world.afterEvents.itemUse.subscribe((data) => {
     const item = data.itemStack;
     const player = data.source;
-    
+
     if (item.typeId === ENCHANT_CONFIG.ENCHANT_ITEM) {
         showEnchantUI(player);
     }
@@ -276,7 +321,7 @@ function showEnchantUI(player) {
             if (!item) continue;
 
             // 아이템이 인챈트 가능한지 확인
-            const availableEnchants = Object.values(CUSTOM_ENCHANTS).filter(enchant => 
+            const availableEnchants = Object.values(CUSTOM_ENCHANTS).filter(enchant =>
                 enchant.allowedItems.includes(item.typeId)
             );
 
@@ -322,7 +367,7 @@ function showEnchantUI(player) {
 
         formData.show(player).then(response => {
             if (response.canceled) return;
-            
+
             const selectedItem = enchantableItems[response.selection];
             showEnchantTypeUI(player, selectedItem.item, selectedItem.enchants, selectedItem.slot);
         });
@@ -349,7 +394,7 @@ function showEnchantTypeUI(player, item, availableEnchants, slot) {
             showEnchantUI(player);
             return;
         }
-        
+
         const selectedEnchant = availableEnchants[response.selection];
         showEnchantLevelUI(player, item, selectedEnchant, slot);
     });
@@ -381,8 +426,8 @@ function showEnchantLevelUI(player, item, enchant, slot) {
 function applyEnchant(player, item, enchant, level, slot) {
     try {
         const inventory = player.getComponent("inventory").container;
-        const cost = enchant.baseCost * Math.pow(ENCHANT_CONFIG.COST_MULTIPLIER, level - 1);
-        
+        const cost = enchant.baseCost + (enchant.costIncrease * (level - 1));
+
         // 에메랄드 수량 확인
         let emeraldCount = 0;
         for (let i = 0; i < inventory.size; i++) {
@@ -391,19 +436,24 @@ function applyEnchant(player, item, enchant, level, slot) {
                 emeraldCount += item.amount;
             }
         }
-        
+
         // 에메랄드가 부족한 경우
         if (emeraldCount < cost) {
             player.sendMessage(`§c에메랄드가 부족합니다. §e(필요: ${cost}개, 보유: ${emeraldCount}개)`);
             return;
         }
 
-        // 인챈트 성공 확률 계산
+        // 레벨별 성공 확률 계산
+        const successChance = Math.max(0.05, enchant.baseSuccessChance - (enchant.levelPenalty * (level - 1)));
         const random = Math.random();
-        if (random < ENCHANT_CONFIG.FAIL_CHANCE) {
+        
+        // 성공 확률과 비용 표시
+        player.sendMessage(`§e${enchant.name} 인챈트 시도 중...\n§f- 성공 확률: §a${Math.round(successChance * 100)}%\n§f- 비용: §6${cost}에메랄드`);
+
+        if (random > successChance) {
             // 실패
             player.runCommandAsync(`clear @s emerald 0 ${cost}`);
-            
+
             if (random < ENCHANT_CONFIG.BREAK_CHANCE) {
                 // 아이템 파괴
                 inventory.setItem(slot, undefined);
@@ -424,22 +474,27 @@ function applyEnchant(player, item, enchant, level, slot) {
 
             // 에메랄드 차감
             player.runCommandAsync(`clear @s emerald 0 ${cost}`);
-            
+
             // 기존 로어 가져오기
             const existingLore = currentItem.getLore() || [];
-            
-            // 이미 같은 인챈트가 있는지 확인
-            const hasEnchant = existingLore.some(line => line.includes(enchant.id));
-            if (hasEnchant) {
-                player.sendMessage(`§c이미 ${enchant.name} 인챈트가 적용되어 있습니다.`);
-                return;
+
+            // 같은 인챈트가 있는지 확인하고, 있다면 레벨 비교
+            const existingEnchantLine = existingLore.find(line => line.includes(enchant.id));
+            if (existingEnchantLine) {
+                const existingLevel = parseInt(existingEnchantLine.split("_").pop());
+                if (level <= existingLevel) {
+                    player.sendMessage(`§c이미 더 높거나 같은 레벨의 ${enchant.name} 인챈트가 적용되어 있습니다.`);
+                    return;
+                }
+                // 기존 인챈트 관련 로어 제거
+                const enchantIndex = existingLore.findIndex(line => line.includes(enchant.id));
+                existingLore.splice(enchantIndex - 2, 3); // 설명, 레벨, ID 3줄 제거
             }
-            
-            // 아이템 이름 업데이트 (기존 인챈트 이름 유지)
+
+            // 아이템 이름 업데이트 (기존 인챈트 이름 제거 후 새로 추가)
             let newName = currentItem.nameTag || item.typeId.split(":")[1].replace(/_/g, " ");
-            if (!newName.includes(enchant.name)) {
-                newName = `${newName} + ${enchant.name} ${level}`;
-            }
+            newName = newName.replace(new RegExp(`\\+ ${enchant.name} \\d+`, 'g'), '').trim();
+            newName = `${newName} + ${enchant.name} ${level}`;
             currentItem.nameTag = newName;
 
             // 새 인챈트 로어 추가
@@ -448,12 +503,12 @@ function applyEnchant(player, item, enchant, level, slot) {
                 `§e레벨: ${level}`,
                 `${enchant.id}_${level}`
             );
-            
+
             currentItem.setLore(existingLore);
-            
+
             // 수정된 아이템을 동일한 슬롯에 저장
             inventory.setItem(slot, currentItem);
-            
+
             player.sendMessage(`§a인챈트 성공! ${enchant.name} ${level}이(가) 추가되었습니다.`);
         } catch (error) {
             console.warn("아이템 적용 중 오류:", error);
@@ -469,18 +524,18 @@ function applyEnchant(player, item, enchant, level, slot) {
 world.beforeEvents.itemUse.subscribe((event) => {
     const player = event.source;
     const item = event.itemStack;
-    
+
     if (!item) return;
-    
+
     try {
         const lore = item.getLore();
         let shouldCancelEvent = false;
-        
+
         // 그리스월드의 저주 효과
         const lightningLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.LIGHTNING_STRIKE.id));
         if (lightningLine) {
             const level = parseInt(lightningLine.split("_").pop());
-            
+
             // 쿨타임 체크
             if (!isOnCooldown(player, "LIGHTNING_STRIKE")) {
                 // 플레이어의 시선 방향으로 스킬 발동 (거리 8블록으로 증가)
@@ -494,45 +549,45 @@ world.beforeEvents.itemUse.subscribe((event) => {
                 // 번개 소환 및 폭발 (레벨에 따라 강화, 폭발 범위 감소)
                 player.runCommandAsync(`summon lightning_bolt ${targetPos.x} ${targetPos.y} ${targetPos.z}`);
                 system.runTimeout(() => {
-                    player.dimension.createExplosion(targetPos, 0.5 + (level * 0.5), { 
+                    player.dimension.createExplosion(targetPos, 0.5 + (level * 0.5), {
                         breaksBlocks: false,
                         causesFire: false
                     });
                 }, 10);
-                
+
                 startCooldown(player, "LIGHTNING_STRIKE");
                 shouldCancelEvent = true;
             }
         }
-        
+
         // 얼음의 유산  효과
         const iceLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.ICE_ASPECT.id));
         if (iceLine) {
             const level = parseInt(iceLine.split("_").pop());
-            
+
             // 쿨타임 체크
             if (!isOnCooldown(player, "ICE_ASPECT")) {
                 // 주변 몹들에게 슬로우 효과 (레벨에 따라 강화)
                 player.runCommandAsync(`effect @e[type=!player,r=10] slowness ${5 + level * 2} ${level} true`);
-                
+
                 // 플레이어의 시선 방향으로 눈덩이 소환
                 const viewDirection = player.getViewDirection();
                 const spawnDistance = 3;
                 const spawnHeight = 5;
-                
+
                 const basePos = {
                     x: player.location.x + (viewDirection.x * spawnDistance),
                     y: player.location.y + spawnHeight,
                     z: player.location.z + (viewDirection.z * spawnDistance)
                 };
-                
+
                 // 3x3 패턴으로 눈덩이 소환
                 const offsets = [
-                    {x: 0, z: 0}, {x: 1, z: 0}, {x: -1, z: 0},
-                    {x: 0, z: 1}, {x: 0, z: -1}, {x: 1, z: 1},
-                    {x: -1, z: -1}, {x: 1, z: -1}, {x: -1, z: 1}
+                    { x: 0, z: 0 }, { x: 1, z: 0 }, { x: -1, z: 0 },
+                    { x: 0, z: 1 }, { x: 0, z: -1 }, { x: 1, z: 1 },
+                    { x: -1, z: -1 }, { x: 1, z: -1 }, { x: -1, z: 1 }
                 ];
-                
+
                 offsets.forEach(offset => {
                     const pos = {
                         x: basePos.x + offset.x,
@@ -541,7 +596,7 @@ world.beforeEvents.itemUse.subscribe((event) => {
                     };
                     player.runCommandAsync(`summon snowball ${pos.x.toFixed(1)} ${pos.y.toFixed(1)} ${pos.z.toFixed(1)}`);
                 });
-                
+
                 startCooldown(player, "ICE_ASPECT");
                 shouldCancelEvent = true;
             }
@@ -551,19 +606,19 @@ world.beforeEvents.itemUse.subscribe((event) => {
         const elsaLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.ELSA_ENCOURAGEMENT.id));
         if (elsaLine) {
             const level = parseInt(elsaLine.split("_").pop());
-            
+
             // 레벨에 따라 범위 증가 (3/4/5 블록)
             const radius = 2 + level;
-            
+
             // 주변의 물 블록을 얼음으로 변환
             player.runCommandAsync(`fill ~-${radius} ~-1 ~-${radius} ~${radius} ~1 ~${radius} minecraft:ice [] replace minecraft:water`);
             player.runCommandAsync(`fill ~-${radius} ~-1 ~-${radius} ~${radius} ~1 ~${radius} minecraft:ice [] replace minecraft:flowing_water`);
-            
+
             // 파티클 효과 추가 (플레이어 위치에 눈꽃 파티클)
-            for(let i = 0; i < 20; i++) {
+            for (let i = 0; i < 20; i++) {
                 player.runCommandAsync(`particle minecraft:snowflake_particle ~ ~ ~`);
             }
-            
+
             shouldCancelEvent = true;
         }
 
@@ -571,22 +626,22 @@ world.beforeEvents.itemUse.subscribe((event) => {
         const shepherdLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.SHEPHERDS_RAGE.id));
         if (shepherdLine) {
             const level = parseInt(shepherdLine.split("_").pop());
-            
+
             // 쿨타임 체크
             if (!isOnCooldown(player, "SHEPHERDS_RAGE")) {
                 // 레벨에 따라 범위 증가 (5/7/10 블록)
                 const radius = 3 + (level * 2);
-                
+
                 // 주변 엔티티를 양으로 변환 (플레이어 제외)
                 player.runCommandAsync(`execute as @e[type=!player,type=!sheep,r=${radius}] at @s run summon sheep ~ ~ ~`);
                 player.runCommandAsync(`execute as @e[type=!player,type=!sheep,r=${radius}] at @s run particle minecraft:heart_particle ~ ~1 ~`);
                 player.runCommandAsync(`kill @e[type=!player,type=!sheep,r=${radius}]`);
-                
+
                 // 파티클 효과
-                for(let i = 0; i < 30; i++) {
+                for (let i = 0; i < 30; i++) {
                     player.runCommandAsync(`particle minecraft:heart_particle ~ ~1 ~`);
                 }
-                
+
                 startCooldown(player, "SHEPHERDS_RAGE");
                 shouldCancelEvent = true;
             }
@@ -596,18 +651,18 @@ world.beforeEvents.itemUse.subscribe((event) => {
         const ironWallLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.IRON_WALL.id));
         if (ironWallLine) {
             const level = parseInt(ironWallLine.split("_").pop());
-            
+
             // 쿨타임 체크
             if (!isOnCooldown(player, "IRON_WALL")) {
-                    system.run(() => {
+                system.run(() => {
                     // 레벨에 따라 효과 증가
                     const range = 5 + (level * 2);      // 범위: 7/9/11 블록
                     const power = 2 + (level * 0.5);    // 넉백 세기: 2.5/3/3.5
                     const height = 0.5 + (level * 0.2); // 위로 뜨는 힘: 0.7/0.9/1.1
-                    
+
                     const dimension = world.getDimension("overworld");
                     const loc = player.location;
-                    
+
                     // 파티클 효과
                     for (let i = 0; i < 360; i += 15) {
                         const angle = i * Math.PI / 180;
@@ -617,21 +672,21 @@ world.beforeEvents.itemUse.subscribe((event) => {
                     }
 
                     // 주변 엔티티에 넉백 적용
-                    for (const entity of dimension.getEntities({ 
-                        location: loc, 
+                    for (const entity of dimension.getEntities({
+                        location: loc,
                         maxDistance: range,
                         excludeNames: [player.name]
                     })) {
                         try {
                             // 먼저 엔티티가 플레이어를 바라보게 함
                             entity.lookAt(loc);
-                            
+
                             // 엔티티의 새로운 방향을 가져옴
                             const { x, z } = entity.getViewDirection();
-                            
+
                             // 넉백 적용
                             entity.applyKnockback(-x, -z, power, height);
-                            
+
                             // 넉백된 엔티티 위치에 파티클
                             const eLoc = entity.location;
                             dimension.runCommand(`particle minecraft:critical_hit_emitter ${eLoc.x} ${eLoc.y + 1} ${eLoc.z}`);
@@ -639,11 +694,11 @@ world.beforeEvents.itemUse.subscribe((event) => {
                             continue;
                         }
                     }
-                    
+
                     // 사운드 효과
                     dimension.runCommand(`playsound mob.enderdragon.hit @a ${loc.x} ${loc.y} ${loc.z} 1 1`);
                 });
-                
+
                 startCooldown(player, "IRON_WALL");
                 shouldCancelEvent = true;
             }
@@ -653,15 +708,15 @@ world.beforeEvents.itemUse.subscribe((event) => {
         const dashLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.STEVE_DASH.id));
         if (dashLine) {
             const level = parseInt(dashLine.split("_").pop());
-            
+
             // 레벨에 따른 대쉬 강도 설정
             const forwardPower = 3 + (level * 2);    // 레벨당 2씩 증가 (5/7/9)
             const upwardPower = 0.3 + (level * 0.2); // 레벨당 0.2씩 증가 (0.5/0.7/0.9)
-            
+
             system.run(() => {
                 const dimension = world.getDimension("overworld");
                 const direction = player.getViewDirection();
-                
+
                 // 대쉬 적용
                 player.applyKnockback(
                     direction.x,
@@ -669,13 +724,13 @@ world.beforeEvents.itemUse.subscribe((event) => {
                     forwardPower,
                     upwardPower
                 );
-                
+
                 // 파티클 효과 (플레이어를 따라다니도록)
                 let tickCount = 0;
                 const particleInterval = system.runInterval(() => {
                     const currentPos = player.location;
                     // 플레이어 주변에 여러 개의 파티클 생성
-                    for(let i = 0; i < 3; i++) {
+                    for (let i = 0; i < 3; i++) {
                         const offset = Math.random() * 0.5 - 0.25;
                         dimension.runCommand(
                             `particle minecraft:dragon_breath_trail ` +
@@ -683,18 +738,121 @@ world.beforeEvents.itemUse.subscribe((event) => {
                         );
                     }
                     tickCount++;
-                    
+
                     // 20틱(1초) 동안 파티클 생성
                     if (tickCount >= 20) {
                         system.clearRun(particleInterval);
                     }
                 }, 1);
-                
+
                 // 사운드 효과
                 dimension.runCommand(`playsound mob.phantom.swoop @a ${player.location.x} ${player.location.y} ${player.location.z} 1 1`);
             });
-            
+
             shouldCancelEvent = true;
+        }
+
+        // 검기 효과
+        const swordWaveLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.SWORD_WAVE.id));
+        if (swordWaveLine) {
+            const level = parseInt(swordWaveLine.split("_").pop());
+
+            // 쿨타임 체크
+            if (!isOnCooldown(player, "SWORD_WAVE")) {
+                system.run(() => {
+                    const dimension = world.getDimension("overworld");
+                    const viewDirection = player.getViewDirection();
+                    const loc = player.location;
+                    
+                    const range = 5 + level;           // 사거리: 5/6/7 블록
+                    const damage = 5 + level;          // 데미지: 5/6/7
+                    const width = 1;                   // 검기 양쪽으로 1블록씩 (총 3블록 너비)
+
+                    // 수직 방향 계산 (데미지 판정에도 사용되므로 미리 계산)
+                    const perpX = viewDirection.z;
+                    const perpZ = -viewDirection.x;
+
+                    // 검기 파티클 효과
+                    for (let dist = 0; dist <= range; dist += 0.5) {
+                        const x = loc.x + (viewDirection.x * dist);
+                        const y = loc.y + 1;  // 플레이어 눈높이
+                        const z = loc.z + (viewDirection.z * dist);
+
+                        // 중앙선
+                        dimension.runCommand(`particle minecraft:critical_hit_emitter ${x} ${y} ${z}`);
+
+                        // 양쪽 파티클
+                        for (let w = 1; w <= width; w++) {
+                            // 왼쪽
+                            dimension.runCommand(
+                                `particle minecraft:critical_hit_emitter ${x + (perpX * w)} ${y} ${z + (perpZ * w)}`
+                            );
+                            // 오른쪽
+                            dimension.runCommand(
+                                `particle minecraft:critical_hit_emitter ${x - (perpX * w)} ${y} ${z - (perpZ * w)}`
+                            );
+                        }
+                    }
+
+                    // 데미지 적용 (중앙, 왼쪽, 오른쪽)
+                    // 중앙 라인 데미지
+                    dimension.runCommand(
+                        `damage @e[type=!minecraft:item,name=!${player.name},x=${loc.x},y=${loc.y},z=${loc.z},` +
+                        `dx=${viewDirection.x * range},dy=2,dz=${viewDirection.z * range}] ${damage} entity_attack`
+                    );
+
+                    // 왼쪽 라인 데미지
+                    dimension.runCommand(
+                        `damage @e[type=!minecraft:item,name=!${player.name},x=${loc.x + perpX},y=${loc.y},z=${loc.z + perpZ},` +
+                        `dx=${viewDirection.x * range},dy=2,dz=${viewDirection.z * range}] ${damage} entity_attack`
+                    );
+
+                    // 오른쪽 라인 데미지
+                    dimension.runCommand(
+                        `damage @e[type=!minecraft:item,name=!${player.name},x=${loc.x - perpX},y=${loc.y},z=${loc.z - perpZ},` +
+                        `dx=${viewDirection.x * range},dy=2,dz=${viewDirection.z * range}] ${damage} entity_attack`
+                    );
+
+                    // 사운드 효과
+                    dimension.runCommand(
+                        `playsound item.trident.throw @a ${loc.x} ${loc.y} ${loc.z} 1 0.5`
+                    );
+                });
+
+                startCooldown(player, "SWORD_WAVE");
+                shouldCancelEvent = true;
+            }
+        }
+
+        // 맹독 효과
+        const poisonLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.DEADLY_POISON.id));
+        if (poisonLine) {
+            try {
+                // 디버깅: 타격된 엔티티 정보
+                console.warn(`타격된 엔티티 정보: ${hitEntity.typeId}`);
+                
+                // 디버깅: 위더 효과 명령어 실행
+                const effectCommand = "effect @s wither 4 1";
+                console.warn(`실행할 명령어: ${effectCommand}`);
+                
+                // 위더 효과 적용
+                hitEntity.dimension.runCommand(effectCommand);
+                console.warn("위더 효과 적용 완료");
+                
+                // 파티클 효과
+                const loc = hitEntity.location;
+                hitEntity.dimension.runCommand(`particle minecraft:large_smoke ~ ~1 ~`);
+                console.warn("파티클 효과 적용 완료");
+                
+                // 사운드 효과
+                hitEntity.dimension.runCommand(`playsound mob.wither.shoot @a ~ ~ ~ 0.3 1.5`);
+                console.warn("사운드 효과 적용 완료");
+                
+            } catch (error) {
+                // 오류 메시지를 문자열로 변환하여 출력
+                const errorMessage = typeof error === 'string' ? error : error.message || '알 수 없는 오류';
+                console.warn(`맹독 효과 처리 중 오류 발생: ${errorMessage}`);
+            }
         }
 
         // 모든 효과 처리 후 이벤트 취소 여부 결정
@@ -710,7 +868,7 @@ world.beforeEvents.itemUse.subscribe((event) => {
 system.runInterval(() => {
     for (const player of world.getAllPlayers()) {
         const armor = player.getComponent("equippable");
-        
+
         const boots = armor.getEquipment("Feet");
         if (boots) {
             const lore = boots.getLore();
@@ -727,3 +885,66 @@ system.runInterval(() => {
         }
     }
 }, 60); // 3초마다 효과 갱신 
+
+// 플레이어의 현재 들고 있는 아이템을 가져오는 함수
+function getItem(player) {
+    try {
+        const inventory = player.getComponent("inventory");
+        const selectedSlot = player.selectedSlotIndex;
+        const item = inventory.container.getItem(selectedSlot);
+        return item;
+    } catch (err) {
+        return undefined;
+    }
+}
+
+// 맹독 인챈트 - 타격 효과 처리 
+world.afterEvents.entityHurt.subscribe((event) => {
+    try {
+        // 1. 기본 정보 확인
+        const hitEntity = event.hurtEntity;
+        const damageSource = event.damageSource;
+        const player = damageSource.damagingEntity;
+        
+        // 2. 플레이어 검증
+        if (!player || player.typeId !== "minecraft:player") {
+            return;
+        }
+
+        // 3. 현재 들고 있는 아이템 확인
+        const mainhand = getItem(player);
+        if (!mainhand) {
+            return;
+        }
+
+        // 4. 로어 확인
+        const lore = mainhand.getLore();
+        if (!lore || !Array.isArray(lore)) {
+            return;
+        }
+
+        // 5. 맹독 인챈트 확인
+        const poisonLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.DEADLY_POISON.id));
+        if (!poisonLine) {
+            return;
+        }
+
+        // 6. 효과 적용
+        const level = parseInt(poisonLine.split("_").pop());
+        
+        if (level >= 4) {
+            // 레벨 4 이상: 위더 효과 (2레벨)
+            hitEntity.runCommand(`effect @s wither 4 1`);
+        } else {
+            // 레벨 1-3: 독 효과 (레벨에 따라 1-3)
+            hitEntity.runCommand(`effect @s poison 4 ${level - 1}`);
+        }
+
+        // 파티클 및 사운드 효과
+        hitEntity.runCommand(`particle minecraft:large_smoke ~ ~1 ~`);
+        hitEntity.runCommand(`playsound mob.wither.shoot @a ~ ~ ~ 0.3 1.5`);
+
+    } catch (error) {
+        console.warn(`타격 이벤트 처리 중 오류: ${error.message}`);
+    }
+});
