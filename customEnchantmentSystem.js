@@ -2,7 +2,7 @@ import { world, system } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
 /**
- * 커스텀 인챈트 시스템 v2.1
+ * 커스텀 인챈트 시스템 v2.3
  * 
  * [ 사용 방법 ]
  * 1. 기본 사용법
@@ -11,9 +11,11 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  *    - 인챈트에는 에메랄드가 필요합니다
  * 
  * 2. 인챈트 가능 아이템
- *    - 다이아몬드/네더라이트 검, 도끼: 그리스월드의 저주, 얼음의 유산, 엘사의 격려 인챈트 가능
+ *    - 다이아몬드/네더라이트 검, 도끼: 그리스월드의 저주, 얼음의 유산, 엘사의 격려, 철벽치기, 스티브의 추진력 인챈트 가능
+ *    - 다이아몬드/네더라이트 검: 검기, 맹독 인챈트 가능
  *    - 다이아몬드/네더라이트 괭이: 양치기의 분노 인챈트 가능
  *    - 다이아몬드/네더라이트 부츠: 신속/도약 인챈트 가능
+ *    - 메이스: 역 반동 점프 인챈트 가능
  * 
  * 3. 인챈트 종류
  *    - 그리스월드의 저주: 보는 방향으로 번개와 폭발을 일으킵니다 (최대 레벨 3)
@@ -22,11 +24,16 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  *    - 양치기의 분노: 주변의 모든 엔티티를 양으로 변환합니다 (최대 레벨 3)
  *    - 신속의 부츠: 이동 속도가 증가합니다 (최대 레벨 3)
  *    - 도약의 부츠: 점프력이 증가합니다 (최대 레벨 2)
+ *    - 철벽치기: 주변의 적들을 강력하게 밀쳐냅니다 (최대 레벨 3)
+ *    - 스티브의 추진력: 보는 방향으로 빠르게 대쉬합니다 (최대 레벨 3)
+ *    - 검기: 바라보는 방향으로 강력한 검기를 발사합니다 (최대 레벨 3)
+ *    - 맹독: 타격 시 독 효과를 부여합니다 (최대 레벨 4, 4레벨부터 위더 효과)
+ *    - 역 반동 점프: 주변 몹을 앞으로 2칸 끌어오며 자신은 위로 점프합니다 (최대 레벨 3)
  * 
  * 4. 비용 및 위험
- *    - 기본 비용: 인챈트별로 상이 (8~15 에메랄드)
- *    - 레벨이 올라갈 때마다 비용이 2배씩 증가
- *    - 인챈트 실패 확률: 20%
+ *    - 기본 비용: 인챈트별로 상이 (8~30 에메랄드)
+ *    - 레벨이 올라갈 때마다 비용이 증가
+ *    - 인챈트 실패 확률: 인챈트별로 상이 (10~40%)
  *    - 아이템 파괴 확률: 10%
  * 
  * 5. 쿨타임 시스템
@@ -43,6 +50,9 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  *        name: "인챈트 이름",              // 게임에 표시될 이름 (한글 가능)
  *        description: "인챈트 설명",        // 효과 설명
  *        baseCost: 10,                    // 기본 비용 (에메랄드)
+ *        costIncrease: 5,                 // 레벨당 비용 증가량
+ *        baseSuccessChance: 0.7,          // 기본 성공 확률 (70%)
+ *        levelPenalty: 0.1,               // 레벨당 성공 확률 감소율 (10%)
  *        maxLevel: 3,                     // 최대 레벨
  *        cooldown: 10,                    // 쿨타임 (초) - 스킬형 인챈트만 필요
  *        allowedItems: ["minecraft:검_ID"] // 적용 가능한 아이템 목록
@@ -68,11 +78,13 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  *    - 효과 부여: player.runCommandAsync(`effect @s 효과_ID 지속시간 레벨 true`);
  *    - 엔티티 소환: player.runCommandAsync(`summon 엔티티_ID ~ ~ ~`);
  *    - 블록 변경: player.runCommandAsync(`fill ~-범위 ~-범위 ~-범위 ~범위 ~범위 ~범위 블록_ID`);
+ *    - 엔티티 이동: player.runCommandAsync(`tp @e[type=타입,r=범위] x y z`);
  * 
  * 2. API로 효과 구현
  *    - 폭발: player.dimension.createExplosion(위치, 범위, 옵션);
  *    - 파티클: player.runCommandAsync(`particle 파티클_ID ~ ~ ~`);
  *    - 시선 방향: player.getViewDirection()
+ *    - 넉백: player.applyKnockback(x, z, 수평강도, 수직강도)
  * 
  * [ 주의 사항 ]
  * - 인챈트 실패 시 에메랄드는 소모됩니다
@@ -270,6 +282,18 @@ const CUSTOM_ENCHANTS = {
         levelPenalty: 0.5,                   // 레벨당 5% 감소
         maxLevel: 4,
         allowedItems: ["minecraft:diamond_sword", "minecraft:netherite_sword"]
+    },
+    REVERSE_JUMP: {
+        id: "reverse_jump",
+        name: "역 반동 점프",
+        description: "우클릭시 주변 모든 몹을 앞으로 2칸 끌고 오며 자신은 위로 +5칸 올라간다",
+        baseCost: 30,
+        costIncrease: 30,
+        baseSuccessChance: 0.6,
+        levelPenalty: 0.2,
+        maxLevel: 3,
+        cooldown: 9,
+        allowedItems: ["minecraft:mace"]
     }
 };
 
@@ -854,6 +878,44 @@ world.beforeEvents.itemUse.subscribe((event) => {
                 console.warn(`맹독 효과 처리 중 오류 발생: ${errorMessage}`);
             }
         }
+
+        // 역 반동 점프 인챈트 처리
+        const reverseLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.REVERSE_JUMP.id));
+        if (reverseLine) {
+            try {
+                const level = parseInt(reverseLine.split("_").pop());            
+                // 쿨타임 체크
+                if (!isOnCooldown(player, 'REVERSE_JUMP')) {
+                    system.run(() => {
+                        const loc = player.location;
+                        const jumpHeight = 5 + (level - 1);  // 기본 5블록 + 레벨당 1블록 추가
+                        const viewDirection = player.getViewDirection();
+                        // 플레이어 앞 2칸 위치 계산
+                        const targetX = loc.x + (viewDirection.x * 2);
+                        const targetZ = loc.z + (viewDirection.z * 2);
+                        
+                        // 주변 몹들을 플레이어 앞으로 끌어당기기
+                        player.runCommandAsync(`tp @e[type=!player,type=!item,r=10,name=!${player.name}] ${targetX} ${loc.y} ${targetZ}`);
+                        
+                        // 플레이어를 위로 점프시키기
+                        player.applyKnockback(0, 0, 0, jumpHeight * 0.2);
+                        
+                        // 파티클 효과
+                        player.runCommandAsync(`particle minecraft:dragon_breath_trail ~ ~ ~`);
+                        
+                        // 사운드 효과
+                        player.runCommandAsync(`playsound item.trident.return @a ~ ~ ~ 1 0.5`);
+
+                        // 쿨타임 설정 (9초)
+                        startCooldown(player, 'REVERSE_JUMP');
+                    });
+                    shouldCancelEvent = true;
+                }
+            } catch (error) {
+                console.warn(`역 반동 점프 처리 중 오류: ${error.message}`);
+            }
+        }
+
 
         // 모든 효과 처리 후 이벤트 취소 여부 결정
         if (shouldCancelEvent) {
