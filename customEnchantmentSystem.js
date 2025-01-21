@@ -294,6 +294,17 @@ const CUSTOM_ENCHANTS = {
         maxLevel: 3,
         cooldown: 9,
         allowedItems: ["minecraft:mace"]
+    },
+    SUPER_HERO_LANDING: {
+        id: "super_hero_landing",
+        name: "슈퍼 히어로 랜딩",
+        description: "4칸 이상 높이에서 착지 시 주변 몹을 밀쳐냅니다",
+        baseCost: 30,                         // 1레벨 비용: 30 에메랄드
+        costIncrease: 30,                     // 레벨당 30 에메랄드 증가
+        baseSuccessChance: 0.5,               // 1레벨 성공 확률: 50%
+        levelPenalty: 0.15,                   // 레벨당 15% 감소
+        maxLevel: 3,
+        allowedItems: ["minecraft:diamond_boots", "minecraft:netherite_boots"]
     }
 };
 
@@ -917,6 +928,8 @@ system.runInterval(() => {
     }
 }, 60); // 3초마다 효과 갱신 
 
+
+
 // 플레이어의 현재 들고 있는 아이템을 가져오는 함수
 function getItem(player) {
     try {
@@ -929,7 +942,7 @@ function getItem(player) {
     }
 }
 
-// 맹독 인챈트 - 타격 효과 처리 
+// **맹독 인챈트 - 타격 효과 처리 코드 시작**
 world.afterEvents.entityHurt.subscribe((event) => {
     try {
         // 1. 기본 정보 확인
@@ -979,3 +992,106 @@ world.afterEvents.entityHurt.subscribe((event) => {
         console.warn(`타격 이벤트 처리 중 오류: ${error.message}`);
     }
 });
+// **맹독 인챈트 - 타격 효과 처리 코드 끝**
+
+// **슈퍼 히어로 랜딩 효과 코드 시작**
+// 플레이어 위치 추적을 위한 맵
+const playerPositions = new Map();
+
+// 플레이어 위치 및 속도 추적
+system.runInterval(() => {
+    for (const player of world.getAllPlayers()) {
+        const currentY = player.location.y;
+        const posInfo = playerPositions.get(player.id) || { 
+            lastY: currentY, 
+            velocity: 0, 
+            maxFallHeight: currentY,
+            isFalling: false 
+        };
+        
+        // Y축 속도 계산 (1틱당 Y좌표 변화)
+        posInfo.velocity = currentY - posInfo.lastY;
+        
+        // 떨어지기 시작할 때 최대 높이 저장
+        if (posInfo.velocity < 0 && !posInfo.isFalling) {
+            posInfo.maxFallHeight = posInfo.lastY;
+            posInfo.isFalling = true;
+        }
+        
+        // 상승 중일 때는 낙하 상태 초기화
+        if (posInfo.velocity > 0) {
+            posInfo.isFalling = false;
+        }
+        
+        // 착지 감지 (이전에 떨어지고 있었고, 현재 속도가 0에 가까움)
+        if (posInfo.isFalling && posInfo.velocity > -0.1 && posInfo.velocity < 0.1 && posInfo.lastVelocity < -0.1) {
+            const fallDistance = posInfo.maxFallHeight - currentY;
+            
+            try {
+                const armor = player.getComponent("equippable");
+                const boots = armor.getEquipment("Feet");
+                if (boots) {
+                    const lore = boots.getLore();
+                    const landingLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.SUPER_HERO_LANDING.id));
+                    
+                    // 4칸 이상 떨어졌고 슈퍼 히어로 랜딩 인챈트가 있을 때
+                    if (landingLine && fallDistance >= 4) {
+                        const level = parseInt(landingLine.split("_").pop());
+                        
+                        // 넉백 거리 계산 (기본 2칸 + 레벨당 0.3칸)
+                        const power = 2 + (level - 1) * 0.3;
+                        // 위로 뜨는 힘 계산 (기본 3칸 + 레벨당 0.5칸)
+                        const height = 3 + (level - 1) * 0.5;
+                        // 범위 설정
+                        const range = 5;  // 5블록 범위
+
+                        const dimension = world.getDimension("overworld");
+                        const loc = player.location;
+
+                        // 파티클 효과 (착지 지점 주변으로 원형)
+                        for (let i = 0; i < 360; i += 30) {  // 30도 간격으로 조정
+                            const angle = i * Math.PI / 180;
+                            const px = loc.x + Math.cos(angle) * 2;
+                            const pz = loc.z + Math.sin(angle) * 2;
+                            dimension.runCommand(`particle minecraft:explosion ${px} ${loc.y} ${pz}`);
+                        }
+
+                        // 중앙 지점에 추가 파티클
+                        dimension.runCommand(`particle minecraft:huge_explosion_emitter ${loc.x} ${loc.y} ${loc.z}`);
+
+                        // 주변 엔티티에 넉백 적용
+                        for (const entity of dimension.getEntities({
+                            location: loc,
+                            maxDistance: range,
+                            excludeNames: [player.name]
+                        })) {
+                            try {
+                                entity.lookAt(loc);
+                                const { x, z } = entity.getViewDirection();
+                                entity.applyKnockback(-x, -z, power, height * 0.2);
+                                
+                                // 넉백된 엔티티 위치에 작은 파티클 추가
+                                const eLoc = entity.location;
+                                dimension.runCommand(`particle minecraft:critical_hit ${eLoc.x} ${eLoc.y + 1} ${eLoc.z}`);
+                            } catch (error) {
+                                continue;
+                            }
+                        }
+
+                        // 사운드 효과
+                        dimension.runCommand(`playsound random.explode @a ${loc.x} ${loc.y} ${loc.z} 0.7 1.2`);
+                    }
+                }
+            } catch (error) {}
+            
+            // 착지 후 상태 초기화
+            posInfo.isFalling = false;
+        }
+        
+        // 현재 상태 저장
+        posInfo.lastY = currentY;
+        posInfo.lastVelocity = posInfo.velocity;
+        playerPositions.set(player.id, posInfo);
+    }
+}, 1);
+// **슈퍼 히어로 랜딩 효과 코드 끝**
