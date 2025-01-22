@@ -30,6 +30,15 @@ import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/serve
  *    - 길드 채팅: 길드원들끼리 비공개 채팅을 할 수 있습니다.
  *    - 이름 태그: 길드에 가입한 플레이어의 이름 위에 길드 이름이 표시됩니다.
  * 
+ * 6. PvP 보호 시스템:
+ *    - 같은 길드원끼리는 서로 공격할 수 없습니다 (데미지가 무효화됨).
+ *    - 각 길드는 team1부터 team20까지의 태그 중 하나를 자동으로 할당받습니다.
+ *    - 길드 가입 시 자동으로 해당 팀 태그가 부여됩니다.
+ *    - 길드 탈퇴/추방/해체 시 팀 태그가 자동으로 제거됩니다.
+ *    - 최대 20개의 길드까지 동시에 운영 가능합니다.
+ *    - player.json 파일에서 팀 태그 설정을 확인할 수 있습니다.(https://github.com/ssakspirit/scriptAPI/blob/main/player.json)
+ *    - 관련 영상(https://www.youtube.com/watch?v=5OhlCyzCanc)
+ * 
  * 관리자 권한 설정 방법:
  * 1. 플레이어에게 'admin' 태그 부여:
  *    - /tag [플레이어이름] add admin
@@ -82,13 +91,30 @@ function createGuild(player, guildName, guildDescription) {
     if (guilds[guildName]) {
         return false; // 이미 존재하는 길드
     }
+
+    // 사용 가능한 다음 팀 번호 찾기
+    let teamNumber = 1;
+    const existingTeams = new Set();
+    for (const guild of Object.values(guilds)) {
+        if (guild.teamNumber) {
+            existingTeams.add(guild.teamNumber);
+        }
+    }
+    while (existingTeams.has(teamNumber)) {
+        teamNumber++;
+    }
+
     guilds[guildName] = {
         leader: player.name,
         description: guildDescription,
         members: [player.name],
-        joinRequests: []
+        joinRequests: [],
+        teamNumber: teamNumber // 팀 번호 추가
     };
     saveGuilds(guilds);
+
+    // 길드장에게 팀 태그 부여
+    player.addTag(`team${teamNumber}`);
 
     // 길드 생성 직후 플레이어의 이름 태그 업데이트
     updatePlayerNameTag(player);
@@ -133,29 +159,31 @@ function leaveGuild(player) {
     let guilds = getGuilds();
     const playerGuildName = getPlayerGuild(player.name);
     if (!playerGuildName) {
-        return false; // 입한 길드 없음
+        return false;
     }
     const guild = guilds[playerGuildName];
 
+    // 팀 태그 제거
+    player.removeTag(`team${guild.teamNumber}`);
+
     if (guild.leader === player.name) {
         // 길드장이 탈퇴하는 경우 길드 해체
-        delete guilds[playerGuildName];
-        saveGuilds(guilds);
-
-        // 모든 길드원의 이름 태그 초기화
+        // 모든 길드원의 팀 태그 제거
         for (const memberName of guild.members) {
             const member = world.getAllPlayers().find(p => p.name === memberName);
             if (member) {
+                member.removeTag(`team${guild.teamNumber}`);
                 updatePlayerNameTag(member);
                 member.sendMessage(`§c${playerGuildName} 길드가 해체되었습니다. 길드장이 탈퇴했습니다.`);
             }
         }
+        delete guilds[playerGuildName];
     } else {
         // 일반 길드원 탈퇴
         guild.members = guild.members.filter(member => member !== player.name);
-        saveGuilds(guilds);
-        updatePlayerNameTag(player);
     }
+    saveGuilds(guilds);
+    updatePlayerNameTag(player);
     return true;
 }
 
@@ -470,6 +498,8 @@ function kickMember(player, memberToKick) {
     player.sendMessage(`§a${memberToKick}을(를) 길드에서 추방했습니다.`);
     const kickedPlayer = world.getAllPlayers().find(p => p.name === memberToKick);
     if (kickedPlayer) {
+        // 추방된 플레이어의 팀 태그 제거
+        kickedPlayer.removeTag(`team${guild.teamNumber}`);
         kickedPlayer.sendMessage(`§c당신은 ${playerGuildName} 길드에서 추방되었습니다.`);
         updatePlayerNameTag(kickedPlayer);
     }
@@ -603,15 +633,13 @@ function disbandGuild(player) {
 
     const guild = guilds[playerGuildName];
     const members = guild.members;
+    const teamNumber = guild.teamNumber;
 
-    // 길드 삭제
-    delete guilds[playerGuildName];
-    saveGuilds(guilds);
-
-    // 모든 길드원에게 알림
+    // 모든 길드원의 팀 태그 제거
     for (const memberName of members) {
         const member = world.getAllPlayers().find(p => p.name === memberName);
         if (member) {
+            member.removeTag(`team${teamNumber}`);
             if (member.name === player.name) {
                 member.sendMessage(`§c당신이 ${playerGuildName} 길드를 해체했습니다.`);
             } else {
@@ -620,6 +648,10 @@ function disbandGuild(player) {
             updatePlayerNameTag(member);
         }
     }
+
+    // 길드 삭제
+    delete guilds[playerGuildName];
+    saveGuilds(guilds);
 
     player.sendMessage(`§a${playerGuildName} 길드를 성공적으로 해체했습니다.`);
 }
@@ -701,8 +733,10 @@ function acceptJoinRequest(player, requester) {
     player.sendMessage(`§a${requester}의 가입 요청을 수락했습니다.`);
     const newMember = world.getAllPlayers().find(p => p.name === requester);
     if (newMember) {
+        // 새 멤버에게 팀 태그 부여
+        newMember.addTag(`team${guild.teamNumber}`);
         newMember.sendMessage(`§a당신의 ${playerGuildName} 길드 가입 요청이 수락되었습니다.`);
-        updatePlayerNameTag(newMember);  // 새로운 멤버의 이름 태그 즉시 업데이트
+        updatePlayerNameTag(newMember);
     }
 
     // 모든 온라인 길드원의 이름 태그 업데이트
@@ -839,7 +873,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
 });
 
 // 서버 시작 시 초기화
-system.run(() => {
+    system.run(() => {
     initGuildSystem();
 });
 
@@ -938,11 +972,13 @@ function deleteGuild(player, guildName) {
     }
 
     const guild = guilds[guildName];
+    const teamNumber = guild.teamNumber;
 
-    // 모든 길드원에게 알림
+    // 모든 길드원의 팀 태그 제거
     for (const memberName of guild.members) {
         const member = world.getAllPlayers().find(p => p.name === memberName);
         if (member) {
+            member.removeTag(`team${teamNumber}`);
             member.sendMessage(`§c관리자에 의해 '${guildName}' 길드가 삭제되었습니다.`);
             updatePlayerNameTag(member);
         }
