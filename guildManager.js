@@ -9,6 +9,9 @@ import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/serve
  *    - !길드장: 길드장용 길드 관리 UI를 엽니다.
  *    - !관리자: 관리자용 길드 관리 UI를 엽니다 ('admin' tag 필요).
  *    - ㅁ [메시지]: 길드 채팅을 보냅니다.
+ *    - !길드전쟁: 길드 전쟁을 시작합니다 ('admin' tag 필요).
+ *    - !길드전쟁종료: 길드 전쟁을 종료하고 결과를 발표합니다 ('admin' tag 필요).
+ *    - !길드전쟁설정: 길드 전쟁의 승리 조건과 보상을 설정합니다 ('admin' tag 필요).
  * 
  * 2. 길드 기능:
  *    - 길드 생성: 새로운 길드를 만들 수 있습니다.
@@ -25,6 +28,8 @@ import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/serve
  *    - 길드 삭제: 서버의 모든 길드를 삭제할 수 있습니다.
  *    - 길드 채팅 모니터링: 모든 길드의 내부 채팅을 볼 수 있습니다.
  *    - 관리자 모드 표시: 길드 채팅을 볼 때 관리자 모드로 표시됩니다.
+ *    - 길드 전쟁 시작/종료: 길드 전쟁을 시작하고 종료할 수 있습니다.
+ *    - 길드 전쟁 설정: 승리 조건과 보상을 설정할 수 있습니다.
  * 
  * 5. 기타 기능:
  *    - 길드 채팅: 길드원들끼리 비공개 채팅을 할 수 있습니다.
@@ -36,8 +41,21 @@ import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/serve
  *    - 길드 가입 시 자동으로 해당 팀 태그가 부여됩니다.
  *    - 길드 탈퇴/추방/해체 시 팀 태그가 자동으로 제거됩니다.
  *    - 최대 20개의 길드까지 동시에 운영 가능합니다.
- *    - player.json 파일에서 팀 태그 설정을 확인할 수 있습니다.(https://github.com/ssakspirit/scriptAPI/blob/main/player.json)
- *    - 관련 영상(https://www.youtube.com/watch?v=5OhlCyzCanc)
+ * 
+ * 7. 길드 전쟁 시스템:
+ *    - 관리자가 !길드전쟁 명령어로 전쟁을 시작할 수 있습니다.
+ *    - 전쟁 중에는 길드원이 상대 길드원을 처치하면 길드의 킬 점수가 증가합니다.
+ *    - 실시간으로 각 길드의 킬 점수가 스코어보드에 표시됩니다.
+ *    - 킬이 발생할 때마다 전체 채팅으로 알림이 표시됩니다.
+ *    - !길드전쟁종료 명령어로 전쟁을 종료하면 최종 순위와 결과가 발표됩니다.
+ *    - 전쟁 종료 시 모든 점수가 초기화됩니다.
+ * 
+ * 8. 길드 전쟁 설정 (!길드전쟁설정):
+ *    - 목표 킬 수 설정: 이 킬 수에 도달하면 자동으로 전쟁이 종료되고 해당 길드가 승리합니다.
+ *    - 승리 보상 설정: 승리한 길드의 모든 길드원에게 지급할 에메랄드 수를 설정합니다.
+ *    - 기본값: 목표 킬 수 10킬, 보상 에메랄드 5개
+ *    - 설정은 서버 재시작 후에도 유지됩니다.
+ *    - 승리 조건 달성 시 자동으로 전쟁이 종료되고 보상이 지급됩니다.
  * 
  * 관리자 권한 설정 방법:
  * 1. 플레이어에게 'admin' 태그 부여:
@@ -796,7 +814,7 @@ world.beforeEvents.chatSend.subscribe((ev) => {
     const player = ev.sender;
     const message = ev.message;
 
-    if (message === "!길드" || message === "!길드장" || message === "!관리자") {
+    if (message === "!길드" || message === "!길드장" || message === "!관리자" || message === "!길드전쟁" || message === "!길드전쟁종료" || message === "!길드전쟁설정") {
         ev.cancel = true;
         if (message === "!길드") {
             player.sendMessage(`채팅창을 닫으면 길드 관리 창이 열립니다.`);
@@ -811,6 +829,12 @@ world.beforeEvents.chatSend.subscribe((ev) => {
             } else {
                 player.sendMessage("§c이 명령어를 사용할 권한이 없습니다.");
             }
+        } else if (message === "!길드전쟁") {
+            startGuildWar(player);
+        } else if (message === "!길드전쟁종료") {
+            endGuildWar(player);
+        } else if (message === "!길드전쟁설정") {
+            openGuildWarSettingsUI(player);
         }
     } else if (message.startsWith('ㅁ')) {
         ev.cancel = true;
@@ -875,6 +899,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
 // 서버 시작 시 초기화
     system.run(() => {
     initGuildSystem();
+    initGuildWarSystem();
 });
 
 // 관리 UI 열기
@@ -990,3 +1015,269 @@ function deleteGuild(player, guildName) {
 
     player.sendMessage(`§a'${guildName}' 길드를 성공적으로 삭제했습니다.`);
 }
+
+
+
+// **길드 전쟁 시스템**
+// 길드 전쟁 시스템 초기화
+function initGuildWarSystem() {
+    system.run(() => {
+        try {
+            // 스코어보드 생성
+            world.getDimension("overworld").runCommand("scoreboard objectives add guildWar dummy \"길드 전쟁\"");
+        } catch (error) {
+            // 이미 존재하는 경우 무시
+        }
+    });
+}
+
+// 길드 전쟁 시작
+function startGuildWar(player) {
+    if (!player.hasTag('admin')) {
+        player.sendMessage('§c관리자만 길드 전쟁을 시작할 수 있습니다.');
+        return;
+    }
+
+    const guilds = getGuilds();
+    if (Object.keys(guilds).length < 2) {
+        player.sendMessage('§c길드 전쟁을 시작하려면 최소 2개 이상의 길드가 필요합니다.');
+        return;
+    }
+
+    system.run(() => {
+        try {
+            const dimension = world.getDimension("overworld");
+            // 스코어보드 초기화
+            try {
+                dimension.runCommand("scoreboard objectives remove guildWar");
+            } catch (error) {
+                // 스코어보드가 없는 경우 무시
+            }
+
+            // 길드 전쟁 점수 초기화
+            const warScores = {};
+            for (const guildName of Object.keys(guilds)) {
+                warScores[guildName] = 0;
+            }
+            world.setDynamicProperty('guildWarScores', JSON.stringify(warScores));
+
+            system.runTimeout(() => {
+                try {
+                    dimension.runCommand("scoreboard objectives add guildWar dummy \"길드 전쟁\"");
+                    dimension.runCommand("scoreboard objectives setdisplay sidebar guildWar");
+
+                    // 각 길드의 초기 점수를 0으로 설정
+                    for (const guildName of Object.keys(guilds)) {
+                        dimension.runCommand(`scoreboard players set "${guildName}" guildWar 0`);
+                    }
+
+                    // 전역 변수로 전쟁 상태 설정
+                    world.setDynamicProperty('isGuildWarActive', true);
+
+                    // 모든 플레이어에게 알림
+                    world.sendMessage('§6=== 길드 전쟁이 시작되었습니다! ===');
+                    world.sendMessage('§e각 길드의 킬 수가 스코어보드에 표시됩니다.');
+                } catch (error) {
+                    console.warn('길드 전쟁 시작 중 오류 발생:', error);
+                    player.sendMessage('§c길드 전쟁을 시작하는 중 오류가 발생했습니다.');
+                }
+            }, 10);
+        } catch (error) {
+            console.warn('길드 전쟁 시작 중 오류 발생:', error);
+            player.sendMessage('§c길드 전쟁을 시작하는 중 오류가 발생했습니다.');
+        }
+    });
+}
+
+// 길드 전쟁 종료
+function endGuildWar(player) {
+    if (!player.hasTag('admin')) {
+        player.sendMessage('§c관리자만 길드 전쟁을 종료할 수 있습니다.');
+        return;
+    }
+
+    system.run(() => {
+        try {
+            const dimension = world.getDimension("overworld");
+            
+            // 진행 중인 길드 전쟁이 있는지 확인
+            const isWarActive = world.getDynamicProperty('isGuildWarActive');
+            if (!isWarActive) {
+                player.sendMessage('§c진행 중인 길드 전쟁이 없습니다.');
+                return;
+            }
+
+            // 동적 속성에서 점수 가져오기
+            const warScoresJson = world.getDynamicProperty('guildWarScores');
+            if (!warScoresJson) {
+                player.sendMessage('§c길드 전쟁 점수를 찾을 수 없습니다.');
+                return;
+            }
+
+            const warScores = JSON.parse(warScoresJson);
+            const scores = Object.entries(warScores).map(([name, score]) => ({
+                name,
+                score
+            }));
+
+            // 점수순으로 정렬
+            scores.sort((a, b) => b.score - a.score);
+            const winner = scores[0];
+
+            // 결과 발표
+            world.sendMessage('§6=== 길드 전쟁이 종료되었습니다! ===');
+            world.sendMessage(`§e승리한 길드: §6${winner.name} §e(${winner.score}킬)`);
+            
+            // 모든 길드의 최종 점수 표시
+            world.sendMessage('§e=== 최종 순위 ===');
+            scores.forEach((p, index) => {
+                world.sendMessage(`§e${index + 1}위: ${p.name} - ${p.score}킬`);
+            });
+
+            // 모든 결과를 표시한 후에 스코어보드와 동적 속성 제거
+            system.runTimeout(() => {
+                try {
+                    // 전쟁 상태 및 점수 초기화
+                    world.setDynamicProperty('isGuildWarActive', false);
+                    world.setDynamicProperty('guildWarScores', '');
+                    // 스코어보드 제거
+                    dimension.runCommand("scoreboard objectives remove guildWar");
+                } catch (error) {
+                    console.warn('스코어보드 제거 중 오류 발생:', error);
+                }
+            }, 100);
+        } catch (error) {
+            console.warn('길드 전쟁 종료 중 오류 발생:', error);
+            player.sendMessage('§c길드 전쟁을 종료하는 중 오류가 발생했습니다.');
+        }
+    });
+}
+
+// 길드 전쟁 설정 UI
+function openGuildWarSettingsUI(player) {
+    if (!player.hasTag('admin')) {
+        player.sendMessage('§c관리자만 길드 전쟁 설정을 변경할 수 있습니다.');
+        return;
+    }
+
+    system.runTimeout(() => {
+        const currentSettings = world.getDynamicProperty('guildWarSettings') || '{"targetKills":10,"rewardEmeralds":5}';
+        const settings = JSON.parse(currentSettings);
+
+        const form = new ModalFormData()
+            .title("길드 전쟁 설정")
+            .textField("목표 킬 수 (승리 조건)", "숫자 입력", String(settings.targetKills))
+            .textField("보상 에메랄드 수", "숫자 입력", String(settings.rewardEmeralds));
+
+        form.show(player).then((response) => {
+            if (response.canceled) return;
+
+            const [targetKills, rewardEmeralds] = response.formValues;
+            const newTargetKills = parseInt(targetKills);
+            const newRewardEmeralds = parseInt(rewardEmeralds);
+
+            if (isNaN(newTargetKills) || newTargetKills <= 0) {
+                player.sendMessage("§c목표 킬 수는 양의 정수여야 합니다.");
+                return;
+            }
+
+            if (isNaN(newRewardEmeralds) || newRewardEmeralds <= 0) {
+                player.sendMessage("§c보상 에메랄드 수는 양의 정수여야 합니다.");
+                return;
+            }
+
+            const newSettings = {
+                targetKills: newTargetKills,
+                rewardEmeralds: newRewardEmeralds
+            };
+            world.setDynamicProperty('guildWarSettings', JSON.stringify(newSettings));
+            player.sendMessage(`§a길드 전쟁 설정이 업데이트되었습니다:\n목표 킬 수: ${newTargetKills}\n승리 보상: 에메랄드 ${newRewardEmeralds}개`);
+        });
+    }, 20);
+}
+
+// 길드 전쟁 승리 처리 함수
+function handleGuildWarVictory(guildName, dimension) {
+    const guild = getGuilds()[guildName];
+    if (!guild) return;
+
+    const settings = JSON.parse(world.getDynamicProperty('guildWarSettings'));
+    
+    // 승리 메시지 전송
+    world.sendMessage('§6=== 길드 전쟁 승리! ===');
+    world.sendMessage(`§e${guildName} 길드가 목표 킬 수(${settings.targetKills}킬)를 달성하여 승리했습니다!`);
+    
+    // 보상 지급
+    for (const memberName of guild.members) {
+        const member = world.getAllPlayers().find(p => p.name === memberName);
+        if (member) {
+            // 에메랄드 지급 (플레이어 이름 직접 지정)
+            dimension.runCommand(`give "${memberName}" emerald ${settings.rewardEmeralds}`);
+            member.sendMessage(`§a길드 전쟁 승리 보상으로 에메랄드 ${settings.rewardEmeralds}개를 받았습니다!`);
+        }
+    }
+
+    // 전쟁 종료 처리
+    system.runTimeout(() => {
+        try {
+            // 전쟁 상태 및 점수 초기화
+            world.setDynamicProperty('isGuildWarActive', false);
+            world.setDynamicProperty('guildWarScores', '');
+            // 스코어보드 제거
+            dimension.runCommand("scoreboard objectives remove guildWar");
+        } catch (error) {
+            console.warn('스코어보드 제거 중 오류 발생:', error);
+        }
+    }, 100);
+}
+
+// 킬 점수 업데이트 부분 수정 (목표 킬 수 확인 추가)
+world.afterEvents.entityDie.subscribe((event) => {
+    const isWarActive = world.getDynamicProperty('isGuildWarActive');
+    if (!isWarActive) return;
+
+    const victim = event.deadEntity;
+    if (!(victim.typeId === 'minecraft:player')) return;
+
+    const killer = event.damageSource.damagingEntity;
+    if (!killer || !(killer.typeId === 'minecraft:player')) return;
+
+    const killerGuildName = getPlayerGuild(killer.name);
+    if (!killerGuildName) return;
+
+    system.run(() => {
+        try {
+            const dimension = world.getDimension("overworld");
+            const warScoresJson = world.getDynamicProperty('guildWarScores');
+            if (!warScoresJson) return;
+
+            const warScores = JSON.parse(warScoresJson);
+            warScores[killerGuildName] = (warScores[killerGuildName] || 0) + 1;
+
+            // 설정된 목표 킬 수 확인
+            const settings = JSON.parse(world.getDynamicProperty('guildWarSettings'));
+            
+            // 동적 속성에 업데이트된 점수 저장
+            world.setDynamicProperty('guildWarScores', JSON.stringify(warScores));
+
+            system.runTimeout(() => {
+                try {
+                    // 스코어보드 표시 업데이트
+                    dimension.runCommand(`scoreboard players set "${killerGuildName}" guildWar ${warScores[killerGuildName]}`);
+
+                    // 킬 알림
+                    world.sendMessage(`§6${killerGuildName}§f 길드의 §e${killer.name}§f님이 §e${victim.name}§f님을 처치했습니다! (${warScores[killerGuildName]}/${settings.targetKills}킬)`);
+
+                    // 목표 킬 수 달성 확인
+                    if (warScores[killerGuildName] >= settings.targetKills) {
+                        handleGuildWarVictory(killerGuildName, dimension);
+                    }
+                } catch (error) {
+                    console.warn('킬 점수 업데이트 중 오류 발생:', error);
+                }
+            }, 5);
+        } catch (error) {
+            console.warn('킬 점수 업데이트 중 오류 발생:', error);
+        }
+    });
+});
