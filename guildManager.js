@@ -852,10 +852,9 @@ world.beforeEvents.chatSend.subscribe((ev) => {
                     admin.sendMessage(`§8[§c관리자 모드§8] ${globalMessage}`);
                 }
             }
-        } else {
-            // 일반 채팅은 그대로 처리
-            world.sendMessage(`${player.name}: ${message}`);
         }
+        // 길드에 속하지 않은 플레이어의 메시지는 ev.cancel = false로 유지하여
+        // 기본 채팅 시스템이 처리하도록 함
     }
 });
 
