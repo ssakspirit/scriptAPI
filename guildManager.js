@@ -172,6 +172,18 @@ function joinGuild(player, guildName) {
     return true;
 }
 
+// 플레이어의 모든 team 태그 제거 함수
+function removeAllTeamTags(player) {
+    // 플레이어가 가진 모든 태그 가져오기
+    const tags = player.getTags();
+    // team으로 시작하는 모든 태그 제거
+    for (const tag of tags) {
+        if (tag.startsWith('team')) {
+            player.removeTag(tag);
+        }
+    }
+}
+
 // 길드 탈퇴
 function leaveGuild(player) {
     let guilds = getGuilds();
@@ -181,8 +193,8 @@ function leaveGuild(player) {
     }
     const guild = guilds[playerGuildName];
 
-    // 팀 태그 제거
-    player.removeTag(`team${guild.teamNumber}`);
+    // 모든 team 태그 제거
+    removeAllTeamTags(player);
 
     if (guild.leader === player.name) {
         // 길드장이 탈퇴하는 경우 길드 해체
@@ -190,7 +202,7 @@ function leaveGuild(player) {
         for (const memberName of guild.members) {
             const member = world.getAllPlayers().find(p => p.name === memberName);
             if (member) {
-                member.removeTag(`team${guild.teamNumber}`);
+                removeAllTeamTags(member);
                 updatePlayerNameTag(member);
                 member.sendMessage(`§c${playerGuildName} 길드가 해체되었습니다. 길드장이 탈퇴했습니다.`);
             }
@@ -516,8 +528,8 @@ function kickMember(player, memberToKick) {
     player.sendMessage(`§a${memberToKick}을(를) 길드에서 추방했습니다.`);
     const kickedPlayer = world.getAllPlayers().find(p => p.name === memberToKick);
     if (kickedPlayer) {
-        // 추방된 플레이어의 팀 태그 제거
-        kickedPlayer.removeTag(`team${guild.teamNumber}`);
+        // 추방된 플레이어의 모든 team 태그 제거
+        removeAllTeamTags(kickedPlayer);
         kickedPlayer.sendMessage(`§c당신은 ${playerGuildName} 길드에서 추방되었습니다.`);
         updatePlayerNameTag(kickedPlayer);
     }
@@ -651,13 +663,12 @@ function disbandGuild(player) {
 
     const guild = guilds[playerGuildName];
     const members = guild.members;
-    const teamNumber = guild.teamNumber;
 
     // 모든 길드원의 팀 태그 제거
     for (const memberName of members) {
         const member = world.getAllPlayers().find(p => p.name === memberName);
         if (member) {
-            member.removeTag(`team${teamNumber}`);
+            removeAllTeamTags(member);
             if (member.name === player.name) {
                 member.sendMessage(`§c당신이 ${playerGuildName} 길드를 해체했습니다.`);
             } else {
@@ -996,13 +1007,12 @@ function deleteGuild(player, guildName) {
     }
 
     const guild = guilds[guildName];
-    const teamNumber = guild.teamNumber;
 
     // 모든 길드원의 팀 태그 제거
     for (const memberName of guild.members) {
         const member = world.getAllPlayers().find(p => p.name === memberName);
         if (member) {
-            member.removeTag(`team${teamNumber}`);
+            removeAllTeamTags(member);
             member.sendMessage(`§c관리자에 의해 '${guildName}' 길드가 삭제되었습니다.`);
             updatePlayerNameTag(member);
         }
