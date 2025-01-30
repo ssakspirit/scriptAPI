@@ -292,19 +292,40 @@ function showSellAmountUI(player, item) {
 
 // 아이템 판매 처리
 function sellItem(player, item, amount) {
-    player.runCommandAsync(`clear @s ${item.id} 0 ${amount}`).then(result => {
-        if (!result) {
-            player.sendMessage("§c아이템이 부족합니다.");
-            return;
+    // 먼저 플레이어가 충분한 아이템을 가지고 있는지 확인
+    const inventory = player.getComponent("inventory").container;
+    let itemCount = 0;
+    
+    // 인벤토리에서 해당 아이템 개수 확인
+    for (let i = 0; i < inventory.size; i++) {
+        const slotItem = inventory.getItem(i);
+        if (slotItem?.typeId === item.id) {
+            itemCount += slotItem.amount;
         }
+    }
 
-        const sellPrice = Math.floor(item.price * SHOP_CONFIG.SELL_PRICE_RATIO * amount);
-        player.runCommandAsync(`give @s emerald ${sellPrice}`);
-        
-        item.stock += amount;
-        saveShopData();  // 데이터 변경 후 저장
+    // 아이템이 부족한 경우
+    if (itemCount < amount) {
+        player.sendMessage(`§c${item.name}이(가) 부족합니다. §e(보유: ${itemCount}개, 필요: ${amount}개)`);
+        return;
+    }
 
-        player.sendMessage(`§a${item.name} ${amount}개를 판매했습니다. §e(${sellPrice}에메랄드)`);
+    // 아이템이 충분한 경우 판매 처리
+    player.runCommandAsync(`clear @s ${item.id} 0 ${amount}`).then(result => {
+        if (result?.successCount > 0) {
+            const sellPrice = Math.floor(item.price * SHOP_CONFIG.SELL_PRICE_RATIO * amount);
+            player.runCommandAsync(`give @s emerald ${sellPrice}`);
+            
+            item.stock += amount;
+            saveShopData();  // 데이터 변경 후 저장
+
+            player.sendMessage(`§a${item.name} ${amount}개를 판매했습니다. §e(${sellPrice}에메랄드)`);
+        } else {
+            player.sendMessage("§c아이템 판매 중 오류가 발생했습니다.");
+        }
+    }).catch(error => {
+        console.warn("아이템 판매 중 오류 발생:", error);
+        player.sendMessage("§c아이템 판매 중 오류가 발생했습니다.");
     });
 }
 
