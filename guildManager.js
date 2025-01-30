@@ -854,18 +854,21 @@ world.beforeEvents.chatSend.subscribe((ev) => {
         const guildName = getPlayerGuild(player.name);
         if (guildName) {
             ev.cancel = true;
-            const globalMessage = `§8[§6${guildName}§8] §f${player.name}: ${message}`;
-            world.sendMessage(globalMessage);
-            
-            // 관리자들에게 길드 태그 표시
-            for (const admin of world.getAllPlayers()) {
-                if (admin.hasTag("admin") && !getGuilds()[guildName].members.includes(admin.name)) {
-                    admin.sendMessage(`§8[§c관리자 모드§8] ${globalMessage}`);
+            // 일반 메시지 전송
+            system.runTimeout(() => {
+                const globalMessage = `§8[§6${guildName}§8] §f${player.name}: ${message}`;
+                // 모든 플레이어에게 메시지 전송
+                for (const p of world.getAllPlayers()) {
+                    // 관리자이면서 해당 길드원이 아닌 경우에만 관리자 모드로 표시
+                    if (p.hasTag("admin") && !getGuilds()[guildName].members.includes(p.name)) {
+                        p.sendMessage(`§8[§c관리자 모드§8] ${globalMessage}`);
+                    } else {
+                        p.sendMessage(globalMessage);
+                    }
                 }
-            }
+            }, 0);
         }
-        // 길드에 속하지 않은 플레이어의 메시지는 ev.cancel = false로 유지하여
-        // 기본 채팅 시스템이 처리하도록 함
+        // 길드에 속하지 않은 플레이어의 메시지는 기본 채팅 시스템이 처리하도록 함
     }
 });
 
