@@ -21,7 +21,7 @@ import { world } from "@minecraft/server";
 const lastDodgeTime = new Map();
 
 // 회피 확률 (0.5 = 50%)
-const DODGE_CHANCE = 0.999;
+const DODGE_CHANCE = 0.5;
 
 // 회피 시스템
 world.afterEvents.entityHurt.subscribe((ev) => {
@@ -44,12 +44,12 @@ world.afterEvents.entityHurt.subscribe((ev) => {
 
                 if (isDodgeSuccessful) {
                     // 회피 성공
-                    // 데미지만큼 회복하기 위해 absorption 효과 사용
-                    hurtEntity.runCommand(`effect @s absorption 1 0 true`);
-                    hurtEntity.runCommand(`effect @s instant_health 5 0 true`);
+                    // 데미지에 비례하여 회복 효과 레벨 계산
+                    const healLevel = Math.min(Math.floor(damage / 4), 4); // 4데미지당 1레벨, 최대 4레벨
+                    hurtEntity.runCommand(`effect @s instant_health 1 ${healLevel} true`);
                     
                     // 회피 성공 메시지
-                    hurtEntity.runCommand(`tellraw @s {"rawtext":[{"text":"§b${damage}의 데미지를 회피했습니다!"}]}`);
+                    hurtEntity.runCommand(`tellraw @s {"rawtext":[{"text":"§b${damage}의 데미지를 회피했습니다! (회복 레벨: ${healLevel + 1})"}]}`);
                     
                     // 회피 성공 파티클 효과
                     hurtEntity.runCommand(`particle minecraft:enchanted_hit_particle ~~~`);
