@@ -2,7 +2,7 @@ import { world, system } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
 /**
- * 커스텀 인챈트 시스템 v2.2
+ * 커스텀 인챈트 시스템 v2.3
  * 
  * [ 사용 방법 ]
  * 1. 기본 사용법
@@ -29,6 +29,12 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  *    - 검기: 바라보는 방향으로 강력한 검기를 발사합니다 (최대 레벨 3)
  *    - 맹독: 타격 시 독 효과를 부여합니다 (최대 레벨 4, 4레벨부터 위더 효과)
  *    - 역 반동 점프: 주변 몹을 앞으로 2칸 끌어오며 자신은 위로 점프합니다 (최대 레벨 3)
+ *    - 슈퍼 히어로 랜딩: 4칸 이상 높이에서 착지 시 주변 몹을 밀쳐냅니다 (최대 레벨 3)
+ *    - 기공파: 검을 휘둘러 주변의 적들을 밀쳐냅니다 (최대 레벨 3)
+ *    - 회피: 일정 확률로 적의 공격을 회피하고 체력을 회복합니다 (최대 레벨 3)
+ *    - 생존 본능: 체력이 30% 이하로 떨어지면 저항과 신속 버프를 받습니다 (최대 레벨 3)
+ * 
+ * 
  * 
  * 4. 비용 및 위험
  *    - 기본 비용: 인챈트별로 상이 (8~30 에메랄드)
@@ -158,6 +164,9 @@ class CooldownManager {
 
 // 쿨타임 매니저 인스턴스 생성
 const cooldownManager = new CooldownManager();
+
+// 회피 시스템을 위한 마지막 회피 시간 저장 Map
+const lastDodgeTime = new Map();
 
 // 커스텀 인챈트 설정
 const ENCHANT_CONFIG = {
@@ -305,6 +314,41 @@ const CUSTOM_ENCHANTS = {
         levelPenalty: 0.15,                   // 레벨당 15% 감소
         maxLevel: 3,
         allowedItems: ["minecraft:diamond_boots", "minecraft:netherite_boots"]
+    },
+    FORCE_WAVE: {
+        id: "force_wave",
+        name: "기공파",
+        description: "검을 휘둘러 주변의 적들을 밀쳐냅니다",
+        baseCost: 15,
+        costIncrease: 5,
+        baseSuccessChance: 0.7,
+        levelPenalty: 0.1,
+        maxLevel: 3,
+        cooldown: 5,
+        allowedItems: ["minecraft:diamond_sword", "minecraft:netherite_sword"]
+    },
+    SURVIVAL_INSTINCT: {
+        id: "survival_instinct",
+        name: "생존 본능",
+        description: "체력이 30% 이하로 떨어지면 저항과 신속 버프를 받습니다",
+        baseCost: 25,
+        costIncrease: 10,
+        baseSuccessChance: 0.65,
+        levelPenalty: 0.15,
+        maxLevel: 3,
+        cooldown: 3,
+        allowedItems: ["minecraft:iron_chestplate", "minecraft:diamond_chestplate", "minecraft:netherite_chestplate"]
+    },
+    EVASION: {
+        id: "evasion",
+        name: "회피",
+        description: "일정 확률로 적의 공격을 회피하고 체력을 회복합니다",
+        baseCost: 25,
+        costIncrease: 15,
+        baseSuccessChance: 0.7,
+        levelPenalty: 0.15,
+        maxLevel: 3,
+        allowedItems: ["minecraft:iron_leggings", "minecraft:diamond_leggings", "minecraft:netherite_leggings"]
     }
 };
 
@@ -808,10 +852,10 @@ world.beforeEvents.itemUse.subscribe((event) => {
                     const perpZ = -viewDirection.x;
 
                     // 검기 파티클 효과
-                    for (let dist = 0; dist <= range; dist += 0.5) {
-                        const x = loc.x + (viewDirection.x * dist);
+                    for (let distance = 0; distance <= range; distance += 0.5) {
+                        const x = loc.x + (viewDirection.x * distance);
                         const y = loc.y + 1;  // 플레이어 눈높이
-                        const z = loc.z + (viewDirection.z * dist);
+                        const z = loc.z + (viewDirection.z * distance);
 
                         // 중앙선
                         dimension.runCommand(`particle minecraft:critical_hit_emitter ${x} ${y} ${z}`);
@@ -896,6 +940,110 @@ world.beforeEvents.itemUse.subscribe((event) => {
             }
         }
 
+        // 기공파 인챈트 처리
+        const waveLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.FORCE_WAVE.id));
+        if (waveLine) {
+            try {
+                const level = parseInt(waveLine.split("_").pop());
+
+                if (!isOnCooldown(player, 'FORCE_WAVE')) {
+                    const playerLoc = player.location;
+                    const viewDirection = player.getViewDirection();
+                    
+                    // 검기와 동일한 범위 설정
+                    const range = 5 + level;           // 사거리: 5/6/7 블록
+                    const width = 2;                   // 양쪽으로 2블록씩 (총 4블록 너비)
+                    // 기본 넉백 거리 3블록 + 레벨당 0.5블록
+                    const power = 3 + (level - 1) * 0.5;
+                    // 기본 높이 0.5블록 + 레벨당 0.2블록
+                    const height = 0.5 + (level - 1) * 0.2;
+                    
+                    startCooldown(player, 'FORCE_WAVE');
+                    
+                    system.run(() => {
+                        // 직선 범위에 파티클 생성
+                        for (let distance = 0; distance <= range; distance += 0.5) {
+                            // 플레이어 시선 방향으로의 위치
+                            const baseX = playerLoc.x + (viewDirection.x * distance);
+                            const baseZ = playerLoc.z + (viewDirection.z * distance);
+                            
+                            // 수직 방향 벡터 계산 (시선 방향의 90도 회전)
+                            const perpX = -viewDirection.z;
+                            const perpZ = viewDirection.x;
+                            
+                            // 중심선에 파티클 생성
+                            player.dimension.runCommandAsync(`particle minecraft:basic_flame_particle ${baseX} ${playerLoc.y + 1} ${baseZ}`);
+                            
+                            // 양쪽에 파티클 생성
+                            for (let w = 1; w <= width; w++) {
+                                // 왼쪽
+                                const leftX = baseX + (perpX * w);
+                                const leftZ = baseZ + (perpZ * w);
+                                player.dimension.runCommandAsync(`particle minecraft:basic_flame_particle ${leftX} ${playerLoc.y + 1} ${leftZ}`);
+                                
+                                // 오른쪽
+                                const rightX = baseX - (perpX * w);
+                                const rightZ = baseZ - (perpZ * w);
+                                player.dimension.runCommandAsync(`particle minecraft:basic_flame_particle ${rightX} ${playerLoc.y + 1} ${rightZ}`);
+                            }
+                        }
+                        
+                        // 주변 엔티티에 넉백 적용
+                        const entities = player.dimension.getEntities({
+                            location: playerLoc,
+                            maxDistance: range + width
+                        }).filter(entity => {
+                            if (entity.id === player.id) return false;
+                            
+                            // 엔티티가 범위 안에 있는지 확인
+                            const dx = entity.location.x - playerLoc.x;
+                            const dz = entity.location.z - playerLoc.z;
+                            
+                            // 플레이어 방향으로의 거리 계산
+                            const dotProduct = dx * viewDirection.x + dz * viewDirection.z;
+                            if (dotProduct < 0 || dotProduct > range) return false;
+                            
+                            // 중심선으로부터의 수직 거리 계산
+                            const projectX = playerLoc.x + viewDirection.x * dotProduct;
+                            const projectZ = playerLoc.z + viewDirection.z * dotProduct;
+                            const distToLine = Math.sqrt(
+                                Math.pow(entity.location.x - projectX, 2) +
+                                Math.pow(entity.location.z - projectZ, 2)
+                            );
+                            
+                            return distToLine <= width;
+                        });
+                        
+                        // 범위 내 엔티티들에게 넉백 적용
+                        for (const entity of entities) {
+                            try {
+                                // 엔티티와 플레이어 사이의 방향 벡터 계산
+                                const dx = entity.location.x - playerLoc.x;
+                                const dz = entity.location.z - playerLoc.z;
+                                const distance = Math.sqrt(dx * dx + dz * dz);
+                                const normalizedX = dx / distance;
+                                const normalizedZ = dz / distance;
+                                
+                                // 넉백 적용
+                                entity.applyKnockback(normalizedX, normalizedZ, power, height);
+                                
+                                // 넉백된 엔티티에 파티클
+                                const eLoc = entity.location;
+                                player.dimension.runCommandAsync(`particle minecraft:basic_crit ${eLoc.x} ${eLoc.y + 1} ${eLoc.z}`);
+                            } catch (error) {
+                                continue;
+                            }
+                        }
+                        
+                        // 사운드 효과
+                        player.dimension.runCommandAsync(`playsound mob.warden.sonic_boom @a ${playerLoc.x} ${playerLoc.y} ${playerLoc.z} 0.7 1.2`);
+                    });
+                    shouldCancelEvent = true;
+                }
+            } catch (error) {
+                console.warn("기공파 처리 중 오류:", error);
+            }
+        }
 
         // 모든 효과 처리 후 이벤트 취소 여부 결정
         if (shouldCancelEvent) {
@@ -927,8 +1075,6 @@ system.runInterval(() => {
         }
     }
 }, 60); // 3초마다 효과 갱신 
-
-
 
 // 플레이어의 현재 들고 있는 아이템을 가져오는 함수
 function getItem(player) {
@@ -1072,7 +1218,7 @@ system.runInterval(() => {
                                 
                                 // 넉백된 엔티티 위치에 작은 파티클 추가
                                 const eLoc = entity.location;
-                                dimension.runCommand(`particle minecraft:critical_hit ${eLoc.x} ${eLoc.y + 1} ${eLoc.z}`);
+                                dimension.runCommand(`particle minecraft:basic_crit ${eLoc.x} ${eLoc.y + 1} ${eLoc.z}`);
                             } catch (error) {
                                 continue;
                             }
@@ -1095,3 +1241,119 @@ system.runInterval(() => {
     }
 }, 1);
 // **슈퍼 히어로 랜딩 효과 코드 끝**
+
+// **생존 본능 인챈트 처리**
+world.afterEvents.entityHurt.subscribe((event) => {
+    const hurtEntity = event.hurtEntity;
+    
+    if (hurtEntity.typeId === "minecraft:player") {
+        try {
+            const armor = hurtEntity.getComponent("equippable");
+            const chestplate = armor.getEquipment("Chest");
+            
+            if (chestplate) {
+                const lore = chestplate.getLore();
+                const survivalLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.SURVIVAL_INSTINCT.id));
+                
+                if (survivalLine) {
+                    const level = parseInt(survivalLine.split("_").pop());
+                    
+                    // 쿨타임 체크
+                    if (!isOnCooldown(hurtEntity, 'SURVIVAL_INSTINCT')) {
+                        const health = hurtEntity.getComponent("health");
+                        if (health) {
+                            const currentHealth = health.currentValue;
+                            
+                            // 체력이 30% (6칸) 이하일 때 생존 효과 발동
+                            if (currentHealth <= 6) {
+                                system.run(() => {
+                                    // 레벨에 따른 효과 강화
+                                    const resistanceLevel = level;  // 레벨 1/2/3
+                                    const speedLevel = Math.min(2, level);  // 최대 2레벨까지
+                                    const duration = 3 + level;  // 기본 3초 + 레벨당 1초
+                                    
+                                    // 버프 효과
+                                    hurtEntity.runCommandAsync(`effect @s resistance ${duration} ${resistanceLevel - 1} true`);
+                                    hurtEntity.runCommandAsync(`effect @s speed ${duration} ${speedLevel - 1} true`);
+                                    
+                                    // 시각 및 청각 효과
+                                    hurtEntity.runCommandAsync(`particle minecraft:huge_explosion_emitter ~~~`);
+                                    hurtEntity.runCommandAsync(`playsound random.explode @a[r=10] ~~~ 1 1 1`);
+                                    hurtEntity.runCommandAsync(`title @s actionbar §c§l! 생존 본능 발동 !`);
+                                    
+                                    // 쿨타임 시작
+                                    startCooldown(hurtEntity, 'SURVIVAL_INSTINCT');
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn("생존 본능 처리 중 오류:", error);
+        }
+    }
+});
+// **생존 본능 인챈트 처리 끝**
+
+// **회피 인챈트 처리**
+world.afterEvents.entityHurt.subscribe((event) => {
+    const hurtEntity = event.hurtEntity;
+    const damageSource = event.damageSource;
+    const attacker = damageSource.damagingEntity;
+    const damage = event.damage;
+
+    // 데미지를 받는 대상이 플레이어이고 엔티티에 의한 공격인지 확인
+    if (hurtEntity.typeId === "minecraft:player" && attacker && damageSource.cause === "entityAttack") {
+        try {
+            const armor = hurtEntity.getComponent("equippable");
+            const leggings = armor.getEquipment("Legs");
+            
+            if (leggings) {
+                const lore = leggings.getLore();
+                const evasionLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.EVASION.id));
+                
+                if (evasionLine) {
+                    const level = parseInt(evasionLine.split("_").pop());
+                    const currentTime = Date.now();
+                    const lastTime = lastDodgeTime.get(hurtEntity.id) || 0;
+
+                    // 0.5초 쿨타임 체크
+                    if (currentTime - lastTime >= 500) {
+                        // 레벨에 따른 회피 확률 (10%/20%/30%)
+                        const dodgeChance = level * 0.1;
+                        const isDodgeSuccessful = Math.random() < dodgeChance;
+
+                        if (isDodgeSuccessful) {
+                            // 회피 성공
+                            // 데미지에 비례하여 회복 효과 레벨 계산 (데미지의 1/6, 최대 레벨 2)
+                            const healLevel = Math.min(Math.floor(damage / 6), 2);
+                            hurtEntity.runCommandAsync(`effect @s instant_health 1 ${healLevel} true`);
+                            
+                            // 회피 성공 메시지 (데미지를 소수점 첫째자리까지 표시)
+                            hurtEntity.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§b${attacker.typeId.split(":")[1]}의 ${damage.toFixed(1)}데미지 공격을 회피했습니다!"}]}`);
+                            
+                            // 회피 성공 파티클 효과
+                            hurtEntity.runCommandAsync(`particle minecraft:enchanted_hit_particle ~~~`);
+                            
+                            // 데미지 무효화
+                            event.cancel = true;
+                        } else {
+                            // 회피 실패 메시지 (데미지를 소수점 첫째자리까지 표시)
+                            hurtEntity.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§c${attacker.typeId.split(":")[1]}의 ${damage.toFixed(1)}데미지 공격을 회피하지 못했습니다!"}]}`);
+                            
+                            // 회피 실패 파티클 효과
+                            hurtEntity.runCommandAsync(`particle minecraft:villager_angry ~~~`);
+                        }
+
+                        // 마지막 회피 시도 시간 업데이트
+                        lastDodgeTime.set(hurtEntity.id, currentTime);
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn("회피 처리 중 오류:", error);
+        }
+    }
+});
+// **회피 인챈트 처리 끝**
