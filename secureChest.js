@@ -18,7 +18,7 @@ import { world, system } from "@minecraft/server";
  *    - 다시 열려면 비밀번호를 다시 입력해야 합니다
  * 
  * 4. 상자 잠금 해제:
- *    - 황금열쇠를 들고 잠긴 상자를 클릭합니다
+ *    - 황금열쇠를 들고 잠긴 상자를 클릭하고 비밀번호를 입력합니다
  *    - 상자의 잠금이 해제됩니다
  * 
  * 주의사항:
@@ -59,9 +59,9 @@ function loadData() {
 }
 
 // 월드 로드 시 데이터 불러오기
-system.runInterval(() => {
+world.afterEvents.worldInitialize.subscribe(() => {
     loadData();
-}, 20); // 1초마다 체크 (첫 로드를 위해)
+});
 
 // 비밀번호 입력 상태 관리
 const passwordStates = new Map(); // { playerName: { containerPos: string, state: string } }
@@ -69,7 +69,8 @@ const passwordStates = new Map(); // { playerName: { containerPos: string, state
 // 비밀번호 입력 상태 enum
 const PasswordState = {
     SETTING: "SETTING",           // 새 비밀번호 설정 중
-    UNLOCKING: "UNLOCKING"        // 비밀번호 입력하여 열기 시도 중
+    UNLOCKING: "UNLOCKING",       // 비밀번호 입력하여 열기 시도 중
+    REMOVING: "REMOVING"          // 잠금 해제를 위한 비밀번호 확인 중
 };
 
 // 보안 아이템 설정
@@ -107,9 +108,12 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
         
         // 이미 잠긴 컨테이너인 경우
         if (lockedContainers.has(containerPos)) {
-            lockedContainers.delete(containerPos);
-            player.sendMessage("§a컨테이너의 잠금이 해제되었습니다!");
-            saveData(); // 데이터 저장
+            // 비밀번호 확인 상태로 변경
+            passwordStates.set(player.name, {
+                containerPos: containerPos,
+                state: PasswordState.REMOVING
+            });
+            player.sendMessage("§e잠금 해제를 위해 비밀번호를 입력하세요.");
         } else {
             // 새로운 비밀번호 설정 시작
             passwordStates.set(player.name, {
@@ -172,6 +176,16 @@ world.beforeEvents.chatSend.subscribe((event) => {
             player.sendMessage("§a비밀번호가 확인되었습니다. 컨테이너를 열 수 있습니다!");
             container.canOpen = true;
             lockedContainers.set(containerPos, container);
+            saveData(); // 데이터 저장
+        } else {
+            player.sendMessage("§c잘못된 비밀번호입니다!");
+        }
+    } else if (state.state === PasswordState.REMOVING) {
+        // 잠금 해제를 위한 비밀번호 확인
+        const container = lockedContainers.get(containerPos);
+        if (container && container.password === message) {
+            lockedContainers.delete(containerPos);
+            player.sendMessage("§a비밀번호가 확인되었습니다. 컨테이너의 잠금이 해제되었습니다!");
             saveData(); // 데이터 저장
         } else {
             player.sendMessage("§c잘못된 비밀번호입니다!");
