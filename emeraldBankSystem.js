@@ -132,23 +132,34 @@ function applyInterest() {
     const currentTime = Date.now();
 
     for (const [playerName, account] of Object.entries(accounts)) {
-        const timeDiff = currentTime - account.lastInterestTime;
-        if (timeDiff >= 60000) { // 1분마다 이자 적용
-            const interest = Math.floor(account.balance * INTEREST_RATE);
-            account.balance += interest;
-            account.lastInterestTime = currentTime;
+        const interest = Math.floor(account.balance * INTEREST_RATE);
+        account.balance += interest;
+        account.lastInterestTime = currentTime;
 
-            // 온라인 플레이어에게 알림
-            const player = world.getAllPlayers().find(p => p.name === playerName);
-            if (player && interest !== 0) {
-                const message = interest > 0 ? 
-                    `§a이자가 지급되었습니다: +${interest} 에메랄드` :
-                    `§c이자가 차감되었습니다: ${interest} 에메랄드`;
-                player.sendMessage(message);
-            }
+        // 온라인 플레이어에게 알림
+        const player = world.getAllPlayers().find(p => p.name === playerName);
+        if (player && interest !== 0) {
+            const message = interest > 0 ? 
+                `§a이자가 지급되었습니다: +${interest} 에메랄드` :
+                `§c이자가 차감되었습니다: ${interest} 에메랄드`;
+            player.sendMessage(message);
         }
     }
     saveBankAccounts(accounts);
+}
+
+// 날짜를 한국 시간으로 변환하는 함수
+function formatKoreanDateTime(timestamp) {
+    const date = new Date(timestamp);
+    const koreanTime = new Date(date.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+    
+    const year = koreanTime.getUTCFullYear();
+    const month = String(koreanTime.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(koreanTime.getUTCDate()).padStart(2, '0');
+    const hours = String(koreanTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(koreanTime.getUTCMinutes()).padStart(2, '0');
+    
+    return `${year}년 ${month}월 ${day}일 ${hours}:${minutes}`;
 }
 
 // 은행 메뉴 UI 표시
@@ -272,8 +283,8 @@ function showAccountInfo(player) {
             `§f계좌 소유자: §e${player.name}\n\n` +
             `§f현재 잔액: §a${account.balance} §f에메랄드\n` +
             `§f이자율: §e${INTEREST_RATE * 100}%§f / 분\n\n` +
-            `§f계좌 생성일:\n§7${new Date(account.createdAt).toLocaleString()}\n\n` +
-            `§f마지막 이자 지급:\n§7${new Date(account.lastInterestTime).toLocaleString()}\n\n` +
+            `§f계좌 생성일:\n§7${formatKoreanDateTime(account.createdAt)}\n\n` +
+            `§f마지막 이자 지급:\n§7${formatKoreanDateTime(account.lastInterestTime)}\n\n` +
             `§8※ 마이너스 통장 한도: ${MINIMUM_BALANCE} 에메랄드`
         )
         .button("§l§f돌아가기");
