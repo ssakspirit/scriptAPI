@@ -2,7 +2,7 @@ import { world, system } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
 /**
- * 커스텀 인챈트 시스템 v2.3
+ * 커스텀 인챈트 시스템 v2.4
  * 
  * [ 사용 방법 ]
  * 1. 기본 사용법
@@ -12,10 +12,14 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  * 
  * 2. 인챈트 가능 아이템
  *    - 다이아몬드/네더라이트 검, 도끼: 그리스월드의 저주, 얼음의 유산, 엘사의 격려, 철벽치기, 스티브의 추진력 인챈트 가능
- *    - 다이아몬드/네더라이트 검: 검기, 맹독 인챈트 가능
- *    - 다이아몬드/네더라이트 괭이: 양치기의 분노 인챈트 가능
- *    - 다이아몬드/네더라이트 부츠: 신속/도약 인챈트 가능
+ *    - 다이아몬드/네더라이트 검: 검기, 맹독, 기공파 인챈트 가능
+ *    - 다이아몬드/네더라이트 괭이: 양치기의 분노, 거대함 인챈트 가능
+ *    - 다이아몬드/네더라이트 부츠: 신속/도약, 슈퍼 히어로 랜딩 인챈트 가능
  *    - 메이스: 역 반동 점프 인챈트 가능
+ *    - 철/다이아몬드/네더라이트 흉갑: 생존 본능, 아늑함 인챈트 가능
+ *    - 철/다이아몬드/네더라이트 레깅스: 회피 인챈트 가능
+ *    - 방패: 티타늄 도배 인챈트 가능
+ *    - 꾸러미: 4차원 공간 인챈트 가능
  * 
  * 3. 인챈트 종류
  *    - 그리스월드의 저주: 보는 방향으로 번개와 폭발을 일으킵니다 (최대 레벨 3)
@@ -33,20 +37,22 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  *    - 기공파: 검을 휘둘러 주변의 적들을 밀쳐냅니다 (최대 레벨 3)
  *    - 회피: 일정 확률로 적의 공격을 회피하고 체력을 회복합니다 (최대 레벨 3)
  *    - 생존 본능: 체력이 30% 이하로 떨어지면 저항과 신속 버프를 받습니다 (최대 레벨 3)
- * 
- * 
+ *    - 아늑함: 착용시 재생 효과를 부여받습니다 (최대 레벨 3)
+ *    - 티타늄 도배: 방패를 들고 웅크리면 무적 상태가 됩니다 (최대 레벨 1)
+ *    - 4차원 공간: 반경 2블록 내의 모든 엔티티를 즉사시킵니다 (최대 레벨 1)
+ *    - 거대함: 3x3x3 범위의 블록을 한번에 캡니다 (최대 레벨 1)
  * 
  * 4. 비용 및 위험
- *    - 기본 비용: 인챈트별로 상이 (8~30 에메랄드)
+ *    - 기본 비용: 인챈트별로 상이 (8~64 에메랄드)
  *    - 레벨이 올라갈 때마다 비용이 증가
- *    - 인챈트 실패 확률: 인챈트별로 상이 (10~40%)
+ *    - 인챈트 실패 확률: 인챈트별로 상이 (10~90%)
  *    - 아이템 파괴 확률: 10%
  * 
  * 5. 쿨타임 시스템
  *    - 각 스킬형 인챈트는 독립적인 쿨타임을 가집니다
  *    - 쿨타임은 ActionBar에 표시됩니다
  *    - 엘사의 격려는 쿨타임이 없습니다
- *    - 부츠 효과는 3초마다 자동으로 갱신됩니다
+ *    - 패시브 효과는 5초마다 갱신되며 30초간 지속됩니다
  * 
  * [ 새로운 인챈트 추가 방법 ]
  * 1. CUSTOM_ENCHANTS 객체에 새로운 인챈트 추가
@@ -65,9 +71,9 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  *    }
  * 
  * 2. 효과 구현하기
- *    A) 지속형 효과 (예: 부츠 효과)
+ *    A) 지속형 효과 (예: 부츠, 흉갑 효과)
  *       - system.runInterval 내부의 효과 적용 부분에 새로운 효과 추가
- *       - 기존 신속/도약 부츠 코드를 참고하여 작성
+ *       - 기존 신속/도약 부츠나 아늑함 코드를 참고하여 작성
  * 
  *    B) 스킬형 효과 (예: 번개/얼음/양 변환 효과)
  *       - world.beforeEvents.itemUse.subscribe 내부에 새로운 효과 추가
@@ -78,6 +84,10 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  *         4) 효과 구현: player.runCommandAsync() 등으로 효과 적용
  *         5) 쿨타임 시작: startCooldown(player, "새로운_인챈트")
  *         6) 이벤트 취소: shouldCancelEvent = true
+ * 
+ *    C) 이벤트 기반 효과 (예: 회피, 생존 본능)
+ *       - 적절한 이벤트 핸들러에 효과 추가 (entityHurt 등)
+ *       - 기존 회피나 생존 본능 코드를 참고하여 작성
  * 
  * [ 효과 구현 예시 ]
  * 1. 명령어로 효과 구현
@@ -349,6 +359,51 @@ const CUSTOM_ENCHANTS = {
         levelPenalty: 0.15,
         maxLevel: 3,
         allowedItems: ["minecraft:iron_leggings", "minecraft:diamond_leggings", "minecraft:netherite_leggings"]
+    },
+    COZY: {
+        id: "cozy",
+        name: "아늑함",
+        description: "착용시 재생 효과를 부여받습니다",
+        baseCost: 25,                     // 1레벨 비용: 25 에메랄드
+        costIncrease: 20,                 // 레벨당 20 에메랄드 증가
+        baseSuccessChance: 0.7,           // 1레벨 성공 확률: 70%
+        levelPenalty: 0.3,                // 레벨당 30% 감소
+        maxLevel: 3,
+        allowedItems: ["minecraft:iron_chestplate", "minecraft:diamond_chestplate", "minecraft:netherite_chestplate"]
+    },
+    TITANIUM_SHIELD: {
+        id: "titanium_shield",
+        name: "티타늄 도배",
+        description: "방패를 들면 모든 몬스터의 공격이 중지됩니다",
+        baseCost: 50,                     // 기본 비용: 50 에메랄드
+        costIncrease: 0,                  // 레벨 증가 없음
+        baseSuccessChance: 0.4,           // 성공 확률: 40%
+        levelPenalty: 0,                  // 레벨 페널티 없음
+        maxLevel: 1,                      // 최대 레벨 1
+        allowedItems: ["minecraft:shield"]
+    },
+    FOURTH_DIMENSION: {
+        id: "fourth_dimension",
+        name: "4차원 공간",
+        description: "반경 2블록 내의 모든 엔티티를 즉사시킵니다",
+        baseCost: 50,                     // 기본 비용: 50 에메랄드
+        costIncrease: 0,                  // 레벨 증가 없음
+        baseSuccessChance: 0.1,           // 성공 확률: 10%
+        levelPenalty: 0,                  // 레벨 페널티 없음
+        maxLevel: 1,                      // 최대 레벨 1
+        cooldown: 60,                     // 쿨타임: 60초
+        allowedItems: ["minecraft:bundle"]
+    },
+    GIGANTIC: {
+        id: "gigantic",
+        name: "거대함",
+        description: "3x3x3 범위의 블록을 한번에 캡니다",
+        baseCost: 64,                     // 기본 비용: 64 에메랄드
+        costIncrease: 0,                  // 레벨 증가 없음
+        baseSuccessChance: 0.1,           // 성공 확률: 10%
+        levelPenalty: 0,                  // 레벨 페널티 없음
+        maxLevel: 1,                      // 최대 레벨 1
+        allowedItems: ["minecraft:diamond_pickaxe", "minecraft:netherite_pickaxe"]
     }
 };
 
@@ -599,18 +654,44 @@ function applyEnchant(player, item, enchant, level, slot) {
     }
 }
 
-// 인챈트 스킬 효과 처리
+// 아이템 사용형 인챈트 스킬 효과 처리
 world.beforeEvents.itemUse.subscribe((event) => {
-    const player = event.source;
     const item = event.itemStack;
+    const player = event.source;
+    let shouldCancelEvent = false;
 
     if (!item) return;
 
     try {
         const lore = item.getLore();
-        let shouldCancelEvent = false;
+        if (!lore) return;
 
-        // 그리스월드의 저주 효과
+        // 4차원 공간 효과
+        if (item.typeId === "minecraft:bundle") {
+            const dimensionLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.FOURTH_DIMENSION.id));
+            if (dimensionLine) {
+                if (!isOnCooldown(player, "FOURTH_DIMENSION")) {
+                    // 반경 2블록 내의 모든 엔티티 즉사
+                    player.runCommandAsync(`damage @e[r=2,type=!player] 999999 void`);
+                    player.runCommandAsync(`damage @a[r=2,name=!${player.name}] 999999 void`);
+                    
+                    // 효과음 및 파티클
+                    player.runCommandAsync(`playsound mob.wither.break_block @a ~~~ 1 0.5`);
+                    player.runCommandAsync(`particle minecraft:huge_explosion_emitter ~~~`);
+                    
+                    // 메시지
+                    player.sendMessage("§b4차원 공간이 열렸습니다!");
+                    
+                    startCooldown(player, "FOURTH_DIMENSION");
+                    shouldCancelEvent = true;
+                } else {
+                    const remainingTime = cooldownManager.getRemainingTime(player, "FOURTH_DIMENSION");
+                    player.sendMessage(`§c아직 쿨타임이 ${remainingTime}초 남았습니다.`);
+                }
+            }
+        }
+
+        // 그리스월드의 저주
         const lightningLine = lore.find(line => line.includes(CUSTOM_ENCHANTS.LIGHTNING_STRIKE.id));
         if (lightningLine) {
             const level = parseInt(lightningLine.split("_").pop());
@@ -1054,10 +1135,21 @@ world.beforeEvents.itemUse.subscribe((event) => {
     }
 });
 
-// 인챈트 효과 적용 (3초마다 갱신)
+// 패시브 인챈트 효과 적용 (5초마다 갱신)
 system.runInterval(() => {
     for (const player of world.getAllPlayers()) {
         const armor = player.getComponent("equippable");
+
+        // 흉갑 효과 체크
+        const chestplate = armor.getEquipment("Chest");
+        if (chestplate) {
+            const lore = chestplate.getLore();
+            // 아늑함 효과
+            if (lore.some(line => line.includes(CUSTOM_ENCHANTS.COZY.id))) {
+                const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.COZY.id)).split("_").pop());
+                player.runCommandAsync(`effect @s regeneration 30 ${level - 1} true`);
+            }
+        }
 
         const boots = armor.getEquipment("Feet");
         if (boots) {
@@ -1065,16 +1157,16 @@ system.runInterval(() => {
             // 신속의 부츠 효과
             if (lore.some(line => line.includes(CUSTOM_ENCHANTS.SPEED_BOOST.id))) {
                 const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.SPEED_BOOST.id)).split("_").pop());
-                player.runCommandAsync(`effect @s speed ${level * 3} ${level - 1} true`);
+                player.runCommandAsync(`effect @s speed 30 ${level - 1} true`);
             }
             // 도약의 부츠 효과
             if (lore.some(line => line.includes(CUSTOM_ENCHANTS.JUMP_BOOST.id))) {
                 const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.JUMP_BOOST.id)).split("_").pop());
-                player.runCommandAsync(`effect @s jump_boost ${level * 3} ${level - 1} true`);
+                player.runCommandAsync(`effect @s jump_boost 30 ${level - 1} true`);
             }
         }
     }
-}, 60); // 3초마다 효과 갱신 
+}, 100); // 5초마다 효과 갱신 (100틱 = 5초)
 
 // 플레이어의 현재 들고 있는 아이템을 가져오는 함수
 function getItem(player) {
@@ -1357,3 +1449,88 @@ world.afterEvents.entityHurt.subscribe((event) => {
     }
 });
 // **회피 인챈트 처리 끝**
+
+// **티타늄 도배 효과 처리 (방어 자세 감지)
+const shieldUsers = new Map(); // 방패 사용자 추적
+
+// 매 틱마다 방패 사용 체크
+system.runInterval(() => {
+    for (const player of world.getAllPlayers()) {
+        const item = getItem(player);
+        
+        // 방패를 들고 있고 웅크리고 있는지 확인
+        if (item?.typeId === "minecraft:shield" && player.isSneaking) {
+            const lore = item.getLore();
+            if (!lore) continue;
+            
+            // 티타늄 도배 인챈트 확인
+            if (lore.some(line => line.includes(CUSTOM_ENCHANTS.TITANIUM_SHIELD.id))) {
+                if (!shieldUsers.has(player.id)) {
+                    // 효과음 및 파티클
+                    player.runCommandAsync(`playsound item.shield.block @a ~~~ 1 1`);
+                    player.runCommandAsync(`particle minecraft:villager_happy ~~~`);
+                    player.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§b티타늄 도배의 방어 태세가 시작되었습니다!"}]}`);
+                    
+                    // 무적 처리 + 구속
+                    player.runCommandAsync(`effect @s absorption 255 3 true`);
+                    player.runCommandAsync(`effect @s slowness 255 3 true`);
+                    
+                    // 방어 시작 시간 기록
+                    shieldUsers.set(player.id, Date.now());
+                } else {
+                    // 3초마다 파티클 효과
+                    const lastTime = shieldUsers.get(player.id);
+                    if (Date.now() - lastTime >= 3000) {
+                        player.runCommandAsync(`particle minecraft:villager_happy ~~~`);
+                        shieldUsers.set(player.id, Date.now());
+                    }
+                }
+            }
+        } else {
+            // 방어 자세를 풀었을 때
+            if (shieldUsers.has(player.id)) {
+                player.runCommandAsync(`playsound item.shield.block @a ~~~ 1 0.5`);
+                player.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§7티타늄 도배의 방어 태세가 해제되었습니다."}]}`);
+                
+                // 효과 제거
+                player.runCommandAsync(`effect @s absorption 0`);
+                player.runCommandAsync(`effect @s slowness 0`);
+                
+                shieldUsers.delete(player.id);
+            }
+        }
+    }
+}, 1);
+// **티타늄 도배 효과 처리 끝**
+
+// **거대함 효과 처리**
+world.beforeEvents.playerBreakBlock.subscribe((event) => {
+    const player = event.player;
+    const block = event.block;
+    const item = getItem(player);
+    
+    if (!item || !item.typeId.includes("pickaxe")) return;
+    
+    try {
+        const lore = item.getLore();
+        if (!lore) return;
+        
+        // 거대함 인챈트 확인
+        if (lore.some(line => line.includes(CUSTOM_ENCHANTS.GIGANTIC.id))) {
+            // 블록 위치 저장
+            const x = Math.floor(block.location.x);
+            const y = Math.floor(block.location.y);
+            const z = Math.floor(block.location.z);
+            
+            // 3x3x3 범위의 블록을 한번에 파괴
+            player.runCommandAsync(`fill ${x-1} ${y-1} ${z-1} ${x+1} ${y+1} ${z+1} air destroy`);
+            
+            // 효과음 및 파티클
+            player.runCommandAsync(`playsound random.explode @a ~~~ 1 0.8`);
+            player.runCommandAsync(`particle minecraft:huge_explosion_emitter ${x} ${y} ${z}`);
+        }
+    } catch (error) {
+        console.warn("거대함 처리 중 오류:", error);
+    }
+});
+// **거대함 효과 처리 끝**
