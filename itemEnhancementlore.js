@@ -1,6 +1,5 @@
 /**
- * 아이템 강화 시스템 v1.2
- * 로어(아이템 아이디) 내용 추가 버전입니다.
+ * 아이템 강화 시스템 v1.0
  * 
  * [ 사용 방법 ]
  * 1. 강화하고 싶은 아이템을 들고 있습니다.
@@ -164,10 +163,10 @@ const ENHANCEABLE_ITEMS = {
 
 // 강화 단계별 이름 접두사
 const ENHANCEMENT_PREFIXES = {
-    1: "§a[+1] ",
-    2: "§e[+2] ",
-    3: "§b[+3] ",
-    4: "§d[+4] "
+    1: "§a[⭐] ",
+    2: "§e[⭐⭐] ",
+    3: "§b[⭐⭐⭐] ",
+    4: "§d[⭐⭐⭐⭐] "
 };
 
 // 강화 단계별 성공 확률 (%)
@@ -193,10 +192,10 @@ function getCurrentLevel(item, itemConfig) {
     try {
         // 아이템 이름에서 강화 단계 확인
         if (item.nameTag) {
-            for (let level = 1; level <= 4; level++) {
-                if (item.nameTag.includes(`[+${level}]`)) {
-                    return level;
-                }
+            // 별 개수로 레벨 확인
+            const starCount = (item.nameTag.match(/⭐/g) || []).length;
+            if (starCount > 0 && starCount <= 4) {
+                return starCount;
             }
         }
 
