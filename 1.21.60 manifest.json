@@ -2,11 +2,11 @@
 	"format_version": 2,
 	"metadata": {
 		"authors": [
-			"bridge."
+			"stevecoding"
 		],
 		"generated_with": {
 			"bridge": [
-				"2.7.37"
+				"2.7.42"
 			],
 			"dash": [
 				"0.11.7"
@@ -21,7 +21,7 @@
 			21,
 			0
 		],
-		"uuid": "e14644d8-903c-4f40-9b53-85084f27f108",
+		"uuid": "ab72ffc0-8dcc-4c2c-a6ba-b047824df920",
 		"version": [
 			1,
 			0,
@@ -31,7 +31,7 @@
 	"modules": [
 		{
 			"type": "data",
-			"uuid": "f16c5c21-c45d-4f31-a7fa-51401988a4e5",
+			"uuid": "631eea59-ed33-497e-aadd-d32869734423",
 			"version": [
 				1,
 				0,
@@ -41,7 +41,7 @@
 		{
 			"type": "script",
 			"language": "javascript",
-			"uuid": "4270eee9-227b-48ed-9240-ee9b34052795",
+			"uuid": "98f13524-010f-4d49-84b9-1afa5390b4c0",
 			"entry": "scripts/main.js",
 			"version": [
 				1,
@@ -53,7 +53,7 @@
 	"dependencies": [
 		{
 			"module_name": "@minecraft/server",
-			"version": "1.17.0-beta"
+			"version": "1.18.0-beta"
 		},
 		{
 			"module_name": "@minecraft/server-gametest",
