@@ -88,19 +88,37 @@ function deposit(player, amount) {
         return;
     }
 
-    // 플레이어의 에메랄드 확인 및 제거
+    // 플레이어의 에메랄드 확인 후 제거
     try {
-        world.getDimension("overworld").runCommand(
-            `clear "${player.name}" emerald 0 ${amount}`
-        );
+        // 에메랄드 보유 확인
+        const inventory = player.getComponent("inventory").container;
+        let emeraldCount = 0;
+        
+        for (let i = 0; i < inventory.size; i++) {
+            const slotItem = inventory.getItem(i);
+            if (slotItem?.typeId === "minecraft:emerald") {
+                emeraldCount += slotItem.amount;
+            }
+        }
+
+        if (emeraldCount < amount) {
+            player.sendMessage(`§c에메랄드가 부족합니다. §e(보유: ${emeraldCount}개, 필요: ${amount}개)`);
+            return;
+        }
+
+        // 에메랄드가 충분하면 제거
+        const dimension = world.getDimension("overworld");
+        dimension.runCommand(`clear "${player.name}" emerald ${amount}`);
+        
+        // 제거 성공 시 잔액 증가
+        accounts[player.name].balance += amount;
+        saveBankAccounts(accounts);
+        player.sendMessage(`§a${amount} 에메랄드를 입금했습니다. 현재 잔액: ${accounts[player.name].balance} 에메랄드`);
     } catch (error) {
-        player.sendMessage("§c에메랄드가 부족합니다!");
+        console.warn("입금 처리 중 오류 발생:", error);
+        player.sendMessage("§c입금 처리 중 오류가 발생했습니다.");
         return;
     }
-
-    accounts[player.name].balance += amount;
-    saveBankAccounts(accounts);
-    player.sendMessage(`§a${amount} 에메랄드를 입금했습니다. 현재 잔액: ${accounts[player.name].balance} 에메랄드`);
 }
 
 // 출금 처리
