@@ -74,6 +74,15 @@ import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/serve
  * "@minecraft/server"와 "@minecraft/server-ui" 모듈에 대한 종속성을 추가해야 합니다.
  */
 
+// 시스템 설정
+const SYSTEM_SETTINGS = {
+    SCOREBOARD: {
+        LEVEL_OBJECTIVE: "level", // 레벨 스코어보드 이름
+        GUILD_OBJECTIVE: "guild", // 길드 스코어보드 이름
+        GUILD_WAR_OBJECTIVE: "guildwar" // 길드전 스코어보드 이름
+    }
+};
+
 // 길드 시스템 설정값
 const GUILD_SETTINGS = {
     REQUIRED_LEVEL: 50 // 길드 생성에 필요한 최소 레벨 (이 값을 수정하여 레벨 제한 변경 가능)
@@ -81,8 +90,12 @@ const GUILD_SETTINGS = {
 
 // 길드 시스템 초기화
 function initGuildSystem() {
-    if (!world.getDynamicProperty('guilds')) {
-        world.setDynamicProperty('guilds', JSON.stringify({}));
+    try {
+        // 길드 스코어보드 초기화
+        world.scoreboard.addObjective(SYSTEM_SETTINGS.SCOREBOARD.GUILD_OBJECTIVE, "길드");
+        world.scoreboard.addObjective(SYSTEM_SETTINGS.SCOREBOARD.GUILD_WAR_OBJECTIVE, "길드전");
+    } catch (error) {
+        console.warn("길드 시스템 초기화 중 오류:", error);
     }
 }
 
@@ -913,30 +926,16 @@ function sendGuildMessage(player, message) {
     }
 }
 
-// 새로운 플레이어 입장 시 레벨 1 부여
+// 플레이어 스폰 시 이름 태그 업데이트
 world.afterEvents.playerSpawn.subscribe((ev) => {
     const player = ev.player;
-    const initialSpawn = ev.initialSpawn;  // 처음 스폰인지 확인
-
-    // 처음 스폰일 때만 레벨 1 부여
-    if (initialSpawn) {
-        try {
-            const dimension = world.getDimension("overworld");
-            dimension.runCommand(`scoreboard players set "${player.name}" level 1`);
-            player.sendMessage("§a환영합니다! 초기 레벨 1이 부여되었습니다.");
-        } catch (error) {
-            console.warn("새로운 플레이어 레벨 초기화 중 오류:", error);
-        }
-    }
-
-    // 이름 태그 업데이트 (기존 코드)
     system.runTimeout(() => {
         updatePlayerNameTag(player);
     }, 20);
 });
 
 // 서버 시작 시 초기화
-    system.run(() => {
+system.run(() => {
     initGuildSystem();
     initGuildWarSystem();
 });
@@ -1053,8 +1052,6 @@ function deleteGuild(player, guildName) {
 
     player.sendMessage(`§a'${guildName}' 길드를 성공적으로 삭제했습니다.`);
 }
-
-
 
 // **길드 전쟁 시스템**
 // 길드 전쟁 시스템 초기화
@@ -1334,7 +1331,7 @@ function initLevelSystem() {
 // 플레이어의 레벨 가져오기
 function getPlayerLevel(player) {
     try {
-        const objective = world.scoreboard.getObjective('level');
+        const objective = world.scoreboard.getObjective(SYSTEM_SETTINGS.SCOREBOARD.LEVEL_OBJECTIVE);
         if (!objective) {
             console.warn('레벨 스코어보드가 없습니다.');
             return 1;
