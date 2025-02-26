@@ -74,28 +74,25 @@ import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/serve
  * "@minecraft/server"와 "@minecraft/server-ui" 모듈에 대한 종속성을 추가해야 합니다.
  */
 
-// 시스템 설정
-const SYSTEM_SETTINGS = {
-    SCOREBOARD: {
-        LEVEL_OBJECTIVE: "level", // 레벨 스코어보드 이름
-        GUILD_OBJECTIVE: "guild", // 길드 스코어보드 이름
-        GUILD_WAR_OBJECTIVE: "guildwar" // 길드전 스코어보드 이름
-    }
-};
-
 // 길드 시스템 설정값
 const GUILD_SETTINGS = {
     REQUIRED_LEVEL: 50 // 길드 생성에 필요한 최소 레벨 (이 값을 수정하여 레벨 제한 변경 가능)
 };
 
+// 시스템 설정값
+const SYSTEM_SETTINGS = {
+    SCOREBOARD: {
+        LEVEL: {
+            NAME: "playerMoney", // 스코어보드 내부 이름 (변경 시 기존 데이터 손실 주의)
+            DISPLAY_NAME: "§b자금" // 스코어보드 표시 이름
+        }
+    }
+};
+
 // 길드 시스템 초기화
 function initGuildSystem() {
-    try {
-        // 길드 스코어보드 초기화
-        world.scoreboard.addObjective(SYSTEM_SETTINGS.SCOREBOARD.GUILD_OBJECTIVE, "길드");
-        world.scoreboard.addObjective(SYSTEM_SETTINGS.SCOREBOARD.GUILD_WAR_OBJECTIVE, "길드전");
-    } catch (error) {
-        console.warn("길드 시스템 초기화 중 오류:", error);
+    if (!world.getDynamicProperty('guilds')) {
+        world.setDynamicProperty('guilds', JSON.stringify({}));
     }
 }
 
@@ -279,7 +276,7 @@ function createGuildUI(player) {
     // 레벨 확인
     const playerLevel = getPlayerLevel(player);
     if (playerLevel < GUILD_SETTINGS.REQUIRED_LEVEL) {
-        player.sendMessage(`§c길드를 생성하기 위해서는 레벨 ${GUILD_SETTINGS.REQUIRED_LEVEL} 이상이 필요합니다. (현재 레벨: ${playerLevel})`);
+        player.sendMessage(`§c길드를 생성하기 위해서는 ${SYSTEM_SETTINGS.SCOREBOARD.LEVEL.DISPLAY_NAME} ${GUILD_SETTINGS.REQUIRED_LEVEL} 이상이 필요합니다. (현재: ${playerLevel})`);
         return;
     }
 
@@ -1320,9 +1317,13 @@ world.afterEvents.entityDie.subscribe((event) => {
 // 레벨 시스템 초기화
 function initLevelSystem() {
     try {
-        const dimension = world.getDimension("overworld");
-        // 레벨 스코어보드 생성
-        dimension.runCommand("scoreboard objectives add level dummy §e레벨");
+        const objective = world.scoreboard.getObjective(SYSTEM_SETTINGS.SCOREBOARD.LEVEL.NAME);
+        if (!objective) {
+            world.scoreboard.addObjective(
+                SYSTEM_SETTINGS.SCOREBOARD.LEVEL.NAME, 
+                SYSTEM_SETTINGS.SCOREBOARD.LEVEL.DISPLAY_NAME
+            );
+        }
     } catch (error) {
         console.warn("레벨 시스템 초기화 중 오류:", error);
     }
@@ -1331,15 +1332,14 @@ function initLevelSystem() {
 // 플레이어의 레벨 가져오기
 function getPlayerLevel(player) {
     try {
-        const objective = world.scoreboard.getObjective(SYSTEM_SETTINGS.SCOREBOARD.LEVEL_OBJECTIVE);
+        const objective = world.scoreboard.getObjective(SYSTEM_SETTINGS.SCOREBOARD.LEVEL.NAME);
         if (!objective) {
-            console.warn('레벨 스코어보드가 없습니다.');
+            console.warn("레벨 스코어보드가 존재하지 않습니다.");
             return 1;
         }
-        const score = objective.getScore(player.scoreboardIdentity);
-        return score || 1;
+        return objective.getScore(player.scoreboardIdentity) ?? 1;
     } catch (error) {
-        console.warn(`레벨 가져오기 실패: ${error}`);
+        console.warn(`${player.name}의 레벨을 가져오는 중 오류:`, error);
         return 1;
     }
 }
