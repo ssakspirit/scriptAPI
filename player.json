@@ -170,149 +170,149 @@
                                             }
                                         ]
                                     },
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team10"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team10"
-											}
-										]
-									},
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team11"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team11"
-											}
-										]
-									},
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team12"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team12"
-											}
-										]
-									},
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team13"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team13"
-											}
-										]
-									},
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team14"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team14"
-											}
-										]
-									},
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team15"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team15"
-											}
-										]
-									},
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team16"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team16"
-											}
-										]
-									},
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team17"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team17"
-											}
-										]
-									},
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team18"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team18"
-											}
-										]
-									},
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team19"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team19"
-											}
-										]
-									},
-									{
-										"all_of": [
-											{
-												"test": "has_tag",
-												"value": "team20"
-											},
-											{
-												"test": "has_tag",
-												"subject": "other",
-												"value": "team20"
-											}
-										]
-									}					
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team10"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team10"
+						}
+					]
+				},
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team11"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team11"
+						}
+					]
+				},
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team12"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team12"
+						}
+					]
+				},
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team13"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team13"
+						}
+					]
+				},
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team14"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team14"
+						}
+					]
+				},
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team15"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team15"
+						}
+					]
+				},
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team16"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team16"
+						}
+					]
+				},
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team17"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team17"
+						}
+					]
+				},
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team18"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team18"
+						}
+					]
+				},
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team19"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team19"
+						}
+					]
+				},
+				{
+					"all_of": [
+						{
+							"test": "has_tag",
+							"value": "team20"
+						},
+						{
+							"test": "has_tag",
+							"subject": "other",
+							"value": "team20"
+						}
+					]
+				}					
                                 ]
                             }
                         },
