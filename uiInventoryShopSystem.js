@@ -15,6 +15,10 @@
  *    - '!관리자창' 입력 또는 관리자 아이템 우클릭
  *    - admin 태그가 있는 플레이어만 사용 가능
  *    - 아이템 가격, 재고, 구매 제한 설정
+ * 
+ * 3. 상점 초기화:
+ *    - '!상점초기화' 입력 (admin 태그 필요)
+ *    - 상점이 기본값으로 초기화됨 (shopData 리셋)
  */
 
 import { world, system } from "@minecraft/server";
@@ -194,31 +198,24 @@ function showBuyAmountUI(player, item) {
 // 아이템 구매 처리
 function buyItem(player, item, amount) {
     const totalPrice = item.price * amount;
-    
     const inventory = player.getComponent("inventory").container;
     let emeraldCount = 0;
-    
     for (let i = 0; i < inventory.size; i++) {
         const slotItem = inventory.getItem(i);
         if (slotItem?.typeId === "minecraft:emerald") {
             emeraldCount += slotItem.amount;
         }
     }
-    
     if (emeraldCount < totalPrice) {
         player.sendMessage(`§c에메랄드가 부족합니다. §e(보유: ${emeraldCount}개, 필요: ${totalPrice}개)`);
         return;
     }
-
-    player.runCommandAsync(`clear @s emerald 0 ${totalPrice}`);
-    player.runCommandAsync(`give @s ${item.id} ${amount}`);
-    
+    player.runCommand(`clear @s emerald 0 ${totalPrice}`);
+    player.runCommand(`give @s ${item.id} ${amount}`);
     item.stock -= amount;
     const purchaseKey = `${player.name}_${item.id}`;
     playerPurchases.set(purchaseKey, (playerPurchases.get(purchaseKey) || 0) + amount);
-    
-    saveShopData();  // 데이터 변경 후 저장
-
+    saveShopData();
     player.sendMessage(`§a${item.name} ${amount}개를 구매했습니다. §e(${totalPrice}에메랄드 사용)`);
 }
 
@@ -292,41 +289,28 @@ function showSellAmountUI(player, item) {
 
 // 아이템 판매 처리
 function sellItem(player, item, amount) {
-    // 먼저 플레이어가 충분한 아이템을 가지고 있는지 확인
     const inventory = player.getComponent("inventory").container;
     let itemCount = 0;
-    
-    // 인벤토리에서 해당 아이템 개수 확인
     for (let i = 0; i < inventory.size; i++) {
         const slotItem = inventory.getItem(i);
         if (slotItem?.typeId === item.id) {
             itemCount += slotItem.amount;
         }
     }
-
-    // 아이템이 부족한 경우
     if (itemCount < amount) {
         player.sendMessage(`§c${item.name}이(가) 부족합니다. §e(보유: ${itemCount}개, 필요: ${amount}개)`);
         return;
     }
-
-    // 아이템이 충분한 경우 판매 처리
-    player.runCommandAsync(`clear @s ${item.id} 0 ${amount}`).then(result => {
-        if (result?.successCount > 0) {
-            const sellPrice = Math.floor(item.price * SHOP_CONFIG.SELL_PRICE_RATIO * amount);
-            player.runCommandAsync(`give @s emerald ${sellPrice}`);
-            
-            item.stock += amount;
-            saveShopData();  // 데이터 변경 후 저장
-
-            player.sendMessage(`§a${item.name} ${amount}개를 판매했습니다. §e(${sellPrice}에메랄드)`);
-        } else {
-            player.sendMessage("§c아이템 판매 중 오류가 발생했습니다.");
-        }
-    }).catch(error => {
-        console.warn("아이템 판매 중 오류 발생:", error);
+    const result = player.runCommand(`clear @s ${item.id} 0 ${amount}`);
+    if (result.successCount > 0) {
+        const sellPrice = Math.floor(item.price * SHOP_CONFIG.SELL_PRICE_RATIO * amount);
+        player.runCommand(`give @s emerald ${sellPrice}`);
+        item.stock += amount;
+        saveShopData();
+        player.sendMessage(`§a${item.name} ${amount}개를 판매했습니다. §e(${sellPrice}에메랄드)`);
+    } else {
         player.sendMessage("§c아이템 판매 중 오류가 발생했습니다.");
-    });
+    }
 }
 
 // 관리자 UI 표시
@@ -513,6 +497,23 @@ function showRemoveItemUI(player) {
             player.sendMessage(`§a${selectedItem.name} 아이템이 제거되었습니다.`);
         });
     }, 1);
+}
+
+// 관리자용 상점 초기화 명령어
+if (
+  world.beforeEvents &&
+  world.beforeEvents.chatSend &&
+  typeof world.beforeEvents.chatSend.subscribe === "function"
+) {
+  world.beforeEvents.chatSend.subscribe(event => {
+    if (event.message === "!상점초기화" && event.sender.hasTag("admin")) {
+      world.setDynamicProperty("shopData", undefined);
+      initializeShop();
+      saveShopData();
+      event.sender.sendMessage("§a상점이 기본값으로 초기화되었습니다.");
+      event.cancel = true;
+    }
+  });
 }
 
 // 이벤트 처리
