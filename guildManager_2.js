@@ -284,7 +284,7 @@ function createGuildUI(player) {
         .title("길드 생성")
         .textField("길드 이름을 입력하세요:", "길드 이름")
         .textField("길드 설명을 입력하세요:", "길드 설명")
-        .toggle("뒤로 가기", false);
+        .toggle("뒤로 가기", { defaultValue: false });
 
     form.show(player).then((response) => {
         if (response.canceled) return;
@@ -324,7 +324,7 @@ function joinGuildUI(player) {
     const form = new ModalFormData()
         .title("길드 가입 요청")
         .dropdown("가입을 요청할 길드를 선택하세요:", guildList)
-        .toggle("뒤로 가기", false);
+        .toggle("뒤로 가기", { defaultValue: false });
 
     form.show(player).then((response) => {
         if (response.canceled) return;
@@ -979,7 +979,7 @@ function openGuildDeletionUI(player) {
         const form = new ModalFormData()
             .title("길드 삭제")
             .dropdown("삭제할 길드 선택", guildNames)
-            .toggle("뒤로 가기", false);
+            .toggle("뒤로 가기", { defaultValue: false });
 
         form.show(player).then((response) => {
             if (response.canceled) {
@@ -1345,8 +1345,10 @@ function getPlayerLevel(player) {
 }
 
 // 월드 초기화 시 레벨 시스템 초기화
-world.afterEvents.worldInitialize.subscribe(() => {
-    // 레벨 시스템 초기화
-    initLevelSystem();
-    console.warn("레벨 시스템이 초기화되었습니다.");
-});
+if (world.afterEvents && world.afterEvents.worldInitialize && typeof world.afterEvents.worldInitialize.subscribe === 'function') {
+    world.afterEvents.worldInitialize.subscribe(() => {
+        // 레벨 시스템 초기화
+        initLevelSystem();
+        console.warn("레벨 시스템이 초기화되었습니다.");
+    });
+}
