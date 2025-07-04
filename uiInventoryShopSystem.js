@@ -545,7 +545,7 @@ world.beforeEvents.chatSend.subscribe(event => {
 });
 
 // 시스템 초기화
-world.afterEvents.worldInitialize.subscribe(() => {
+world.afterEvents.worldLoad.subscribe(() => {
     // 초기 데이터 로드
     loadShopData();
     
