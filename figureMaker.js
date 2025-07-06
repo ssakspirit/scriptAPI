@@ -80,22 +80,27 @@ import { system } from '@minecraft/server';
 // 서버 시작 시 실행 이벤트
 system.beforeEvents.startup.subscribe(e => {
     const command = e.customCommandRegistry;
+    
+    // 애드온 로드 확인 로그
+    console.log("[Figure Generator] 애드온이 성공적으로 로드되었습니다!");
+    console.log("[Figure Generator] 사용 가능한 명령어:");
+    console.log("  - /figure:circle");
+    console.log("  - /figure:sphere");
+    console.log("  - /figure:hemisphere");
+    console.log("  - /figure:cylinder");
 
-    // 방향 enum 등록
-    command.registerEnum(`figure:direction`, [`xy`, `xz`, `yz`]);
-    command.registerEnum(`figure:axis`, [`x`, `-x`, `y`, `-y`, `z`, `-z`]);
-
-    // 원 명령어 등록
-    command.registerCommand({
+    // 원 명령어 등록 (enum 없이 String 사용)
+    try {
+        command.registerCommand({
         name: `figure:circle`,
         description: "원 모양을 생성합니다",
         permissionLevel: 1,
         optionalParameters: [
-            { type: 6, name: "center" }, // 중심점 좌표
-            { type: 1, name: "radius" }, // 반지름 (정수)
-            { type: 7, name: "blockType" }, // 블록 타입
-            { type: 9, name: "figure:direction" }, // 방향 (xy, xz, yz 평면)
-            { type: 0, name: "fill" } // 내부 채우기 여부
+            { type: "Location", name: "center" }, // 중심점 좌표
+            { type: "Integer", name: "radius" }, // 반지름 (정수)
+            { type: "BlockType", name: "blockType" }, // 블록 타입
+            { type: "String", name: "direction" }, // 방향 (xy, xz, yz 평면)
+            { type: "Boolean", name: "fill" } // 내부 채우기 여부
         ]
     }, (playerData, center, radius, blockType, direction, fill) => {
         const player = playerData.sourceEntity;
@@ -107,6 +112,12 @@ system.beforeEvents.startup.subscribe(e => {
         blockType = blockType || "minecraft:stone";
         direction = direction || "xz";
         fill = fill || false;
+        
+        // 방향 유효성 검사
+        if (!["xy", "xz", "yz"].includes(direction)) {
+            player.sendMessage("§c잘못된 방향입니다. xy, xz, yz 중 하나를 선택하세요.");
+            return;
+        }
 
         system.run(() => {
             // 1/4 원의 점들을 저장할 Set
@@ -179,7 +190,11 @@ system.beforeEvents.startup.subscribe(e => {
 
             player.sendMessage("원이 생성되었습니다!");
         });
-    });
+        });
+        console.log("[Figure Generator] circle 명령어 등록 성공");
+    } catch (error) {
+        console.error("[Figure Generator] circle 명령어 등록 실패:", error);
+    }
 
     // 구 명령어 등록
     command.registerCommand({
@@ -187,10 +202,10 @@ system.beforeEvents.startup.subscribe(e => {
         description: "구 모양을 생성합니다",
         permissionLevel: 1,
         optionalParameters: [
-            { type: 6, name: "center" }, // 중심점 좌표
-            { type: 1, name: "radius" }, // 반지름 (정수)
-            { type: 7, name: "blockType" }, // 블록 타입
-            { type: 0, name: "fill" } // 내부 채우기 여부
+            { type: "Location", name: "center" }, // 중심점 좌표
+            { type: "Integer", name: "radius" }, // 반지름 (정수)
+            { type: "BlockType", name: "blockType" }, // 블록 타입
+            { type: "Boolean", name: "fill" } // 내부 채우기 여부
         ]
     }, (playerData, center, radius, blockType, fill) => {
         const player = playerData.sourceEntity;
@@ -266,11 +281,11 @@ system.beforeEvents.startup.subscribe(e => {
         description: "반구 모양을 생성합니다",
         permissionLevel: 1,
         optionalParameters: [
-            { type: 6, name: "center" }, // 중심점 좌표
-            { type: 1, name: "radius" }, // 반지름 (정수)
-            { type: 7, name: "blockType" }, // 블록 타입
-            { type: 9, name: "figure:axis" }, // 방향 (x, -x, y, -y, z, -z)
-            { type: 0, name: "fill" } // 내부 채우기 여부
+            { type: "Location", name: "center" }, // 중심점 좌표
+            { type: "Integer", name: "radius" }, // 반지름 (정수)
+            { type: "BlockType", name: "blockType" }, // 블록 타입
+            { type: "String", name: "axis" }, // 방향 (x, -x, y, -y, z, -z)
+            { type: "Boolean", name: "fill" } // 내부 채우기 여부
         ]
     }, (playerData, center, radius, blockType, axis, fill) => {
         const player = playerData.sourceEntity;
@@ -282,6 +297,13 @@ system.beforeEvents.startup.subscribe(e => {
         blockType = blockType || "minecraft:stone";
         axis = axis || "y";
         fill = fill || false;
+        
+        // 축 유효성 검사
+        if (!["x", "-x", "y", "-y", "z", "-z"].includes(axis)) {
+            player.sendMessage("§c잘못된 축입니다. x, -x, y, -y, z, -z 중 하나를 선택하세요.");
+            return;
+        }
+        
 
         system.run(() => {
             // 1/4 반구의 점들을 저장할 Set
@@ -379,12 +401,12 @@ system.beforeEvents.startup.subscribe(e => {
         description: "원기둥 모양을 생성합니다",
         permissionLevel: 1,
         optionalParameters: [
-            { type: 6, name: "center" }, // 중심점 좌표
-            { type: 1, name: "radius" }, // 반지름 (정수)
-            { type: 1, name: "height" }, // 높이 (정수)
-            { type: 7, name: "blockType" }, // 블록 타입
-            { type: 9, name: "figure:axis" }, // 방향 (x, -x, y, -y, z, -z)
-            { type: 0, name: "fill" } // 내부 채우기 여부
+            { type: "Location", name: "center" }, // 중심점 좌표
+            { type: "Integer", name: "radius" }, // 반지름 (정수)
+            { type: "Integer", name: "height" }, // 높이 (정수)
+            { type: "BlockType", name: "blockType" }, // 블록 타입
+            { type: "String", name: "axis" }, // 방향 (x, -x, y, -y, z, -z)
+            { type: "Boolean", name: "fill" } // 내부 채우기 여부
         ]
     }, (playerData, center, radius, height, blockType, axis, fill) => {
         const player = playerData.sourceEntity;
@@ -397,6 +419,13 @@ system.beforeEvents.startup.subscribe(e => {
         blockType = blockType || "minecraft:stone";
         axis = axis || "y";
         fill = fill || false;
+        
+        // 축 유효성 검사
+        if (!["x", "-x", "y", "-y", "z", "-z"].includes(axis)) {
+            player.sendMessage("§c잘못된 축입니다. x, -x, y, -y, z, -z 중 하나를 선택하세요.");
+            return;
+        }
+        
 
         system.run(() => {
             // 1/4 원의 점들을 저장할 Set
@@ -488,4 +517,7 @@ system.beforeEvents.startup.subscribe(e => {
             player.sendMessage("원기둥이 생성되었습니다!");
         });
     });
+    
+    // 모든 명령어 등록 완료 로그
+    console.log("[Figure Generator] 모든 명령어 등록이 완료되었습니다!");
 });
