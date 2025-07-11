@@ -1,23 +1,24 @@
 import * as server from "@minecraft/server"
 import * as ui from "@minecraft/server-ui"
 
-const { world } = server;
-// 커스텀 명령어 
-world.beforeEvents.chatSend.subscribe(e => {
+import { world, ItemStack } from "@minecraft/server";
 
-    const msg = e.message
+// 더 안전한 코드 구조
+world.afterEvents.chatSend.subscribe((event) => {
+    const msg = event.message;
+    const player = event.sender;
 
-    if (msg == "명령어1") {
-        e.cancel = true; //입력한 명령어가 안보이게함
-        e.sender.runCommandAsync("say 명령어1을 실행함")
+    switch (msg) {
+        case "명령어1":
+            player.sendMessage("명령어1을 실행함");
+            break;
+        case "명령어2":
+            player.sendMessage("명령어2를 실행함");
+            player.getComponent("inventory").container.addItem(new ItemStack("minecraft:apple", 1));
+            break;
+        case "명령어3":
+            player.sendMessage("명령어3을 실행함");
+            player.addEffect("minecraft:speed", 200, { amplifier: 1 });
+            break;
     }
-    if (msg == "명령어2") {
-        e.sender.runCommandAsync("say 명령어2를 실행함")
-        e.sender.runCommandAsync("give @s apple")
-    }
-    if (msg == "명령어3") {
-        e.sender.runCommandAsync("say 명령어3을 실행함")
-        e.sender.runCommandAsync("effect @s speed")
-        e.sender.runCommandAsync("")
-    }
-})
+});
