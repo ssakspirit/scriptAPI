@@ -52,15 +52,15 @@ function setupScoreboard(player) {
     });
 }
 
-// 플레이어가 다른 플레이어와 상호작용할 때 발생하는 이벤트 처리
-world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
-    const player = ev.player; // 상호작용을 시작한 플레이어
-    const target = ev.target; // 상호작용을 당한 대상
+// 플레이어가 다른 플레이어와 상호작용할 때 발생하는 이벤트 처리 (최신 Script API)
+world.afterEvents.playerInteractWithEntity.subscribe((event) => {
+    const player = event.player; // 상호작용을 시작한 플레이어
+    const target = event.target; // 상호작용을 당한 대상
 
     // 대상이 다른 플레이어일 때 정보 표시
-    if (target.typeId == "minecraft:player") {
+    if (target.typeId === "minecraft:player") {
+        player.sendMessage(`채팅창을 닫으면 상태창이 열립니다.`);
         Info(player, target); // 상호작용한 플레이어의 정보 표시
-        ev.cancel = true; // 상호작용을 취소
     }
 });
 
