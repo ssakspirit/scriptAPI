@@ -100,9 +100,7 @@ function selectRandomReward(gachaType) {
 }
 
 // 시스템 초기화
-world.afterEvents.worldInitialize.subscribe(() => {
-    console.warn("가챠박스 애드온이 로드되었습니다!");
-});
+console.warn("가챠박스 애드온이 로드되었습니다!");
 
 // 블록이 부서질 때 이벤트
 world.afterEvents.playerBreakBlock.subscribe((event) => {

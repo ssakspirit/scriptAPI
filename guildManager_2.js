@@ -1344,11 +1344,6 @@ function getPlayerLevel(player) {
     }
 }
 
-// 월드 초기화 시 레벨 시스템 초기화
-if (world.afterEvents && world.afterEvents.worldInitialize && typeof world.afterEvents.worldInitialize.subscribe === 'function') {
-    world.afterEvents.worldInitialize.subscribe(() => {
-        // 레벨 시스템 초기화
-        initLevelSystem();
-        console.warn("레벨 시스템이 초기화되었습니다.");
-    });
-}
+// 레벨 시스템 초기화
+initLevelSystem();
+console.warn("레벨 시스템이 초기화되었습니다.");

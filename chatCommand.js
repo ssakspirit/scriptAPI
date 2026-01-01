@@ -1,6 +1,3 @@
-import * as server from "@minecraft/server"
-import * as ui from "@minecraft/server-ui"
-
 import { world, ItemStack } from "@minecraft/server";
 
 // 더 안전한 코드 구조

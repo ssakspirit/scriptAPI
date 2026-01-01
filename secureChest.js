@@ -59,9 +59,7 @@ function loadData() {
 }
 
 // 월드 로드 시 데이터 불러오기
-world.afterEvents.worldInitialize.subscribe(() => {
-    loadData();
-});
+loadData();
 
 // 비밀번호 입력 상태 관리
 const passwordStates = new Map(); // { playerName: { containerPos: string, state: string } }

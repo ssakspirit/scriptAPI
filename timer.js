@@ -48,10 +48,8 @@ function printStoredMessage() {
     } 
 } 
 
-// 시간 간격 설정: 20틱마다 실행 (1초에 한 번) 
-const interval = 20; 
+// 시간 간격 설정: 20틱마다 실행 (1초에 한 번)
+const interval = 20;
 
-// system.runInterval을 사용하여 주기적으로 실행 
+// system.runInterval을 사용하여 주기적으로 실행
 system.runInterval(printStoredMessage, interval);
-
-출처: https://stevecoding.tistory.com/15 [스티브코딩:티스토리]

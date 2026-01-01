@@ -1,11 +1,6 @@
-console.warn("불러옴") 
+import { world } from "@minecraft/server";
 
-import * as server from "@minecraft/server" 
-import * as ui from "@minecraft/server-ui" 
-
-const { world } = server; 
-
-//import { world } from "@minecraft/server";  
+console.warn("불러옴")  
 
 world.beforeEvents.playerBreakBlock.subscribe((event) => { 
     const playername = event.player.name; 
@@ -20,16 +15,15 @@ world.beforeEvents.playerBreakBlock.subscribe((event) => {
 
 }); 
 
-// 커스텀 명령어 
-world.afterEvents.chatSend.subscribe(e => { 
+// 커스텀 명령어
+world.afterEvents.chatSend.subscribe(e => {
 
-    const msg = e.message 
+    const msg = e.message
 
-    if (msg == "1") { 
-        e.sender.runCommand("scoreboard objectives add diamond dummy 다이아몬드") 
-        e.sender.runCommand("scoreboard objectives setdisplay sidebar diamond") 
-        e.sender.runCommand("/scoreboard players set @a diamond 0") 
+    if (msg == "1") {
+        e.sender.runCommand("scoreboard objectives add diamond dummy 다이아몬드")
+        e.sender.runCommand("scoreboard objectives setdisplay sidebar diamond")
+        e.sender.runCommand("/scoreboard players set @a diamond 0")
 
-    } 
+    }
 })
-출처: https://stevecoding.tistory.com/14 [스티브코딩:티스토리]

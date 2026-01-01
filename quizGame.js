@@ -120,14 +120,13 @@ world.afterEvents.chatSend.subscribe((event) => {
         }
     } 
 
-    // '종료'가 입력되면 게임 종료 
-    if (message.includes('종료')) { 
-        isGameActive = false; 
-        playerGuess = ""; 
-        currentQuestionIndex = 0; 
-        world.getPlayers().forEach((player) => { 
-            player.sendMessage("게임이 종료되었습니다. 다시 시작하려면 '시작'을 입력하세요."); 
-        }); 
-    } 
+    // '종료'가 입력되면 게임 종료
+    if (message.includes('종료')) {
+        isGameActive = false;
+        playerGuess = "";
+        currentQuestionIndex = 0;
+        world.getPlayers().forEach((player) => {
+            player.sendMessage("게임이 종료되었습니다. 다시 시작하려면 '시작'을 입력하세요.");
+        });
+    }
 });
-출처: https://stevecoding.tistory.com/13 [스티브코딩:티스토리]
