@@ -44,7 +44,7 @@ world.afterEvents.itemUse.subscribe(ev => {
         if (cooldowns.has(playerName) && currentTime < cooldowns.get(playerName)) {
             const timeLeft = ((cooldowns.get(playerName) - currentTime) / 1000).toFixed(1); // 남은 쿨타임 계산
             // 액션바에 남은 쿨타임 표시
-            player.runCommandAsync(`title @s actionbar §c쿨타임: ${timeLeft}초 남음`);
+            player.runCommand(`title @s actionbar §c쿨타임: ${timeLeft}초 남음`);
             return; // 쿨타임 중이면 추가 실행하지 않음
         }
 
@@ -61,7 +61,7 @@ world.afterEvents.itemUse.subscribe(ev => {
         const randomEffect = effects[Math.floor(Math.random() * effects.length)];
 
         // 플레이어에게 효과 적용
-        player.runCommandAsync(`effect @s ${randomEffect}`); // 랜덤 효과 부여
+        player.runCommand(`effect @s ${randomEffect}`); // 랜덤 효과 부여
         player.sendMessage(`§a랜덤 효과가 적용되었습니다: ${randomEffect}`); // 메시지 전송
 
         // 쿨타임 시작 (현재 시간 + 쿨타임 시간)
@@ -83,10 +83,10 @@ system.runInterval(() => {
 
             // 쿨타임이 남아있을 때 액션바에 표시, 쿨타임이 끝나면 삭제
             if (currentTime < cooldowns.get(playerName)) {
-                player.runCommandAsync(`title @s actionbar §e쿨타임: ${timeLeft}초`); // 남은 쿨타임 표시
+                player.runCommand(`title @s actionbar §e쿨타임: ${timeLeft}초`); // 남은 쿨타임 표시
             } else {
                 cooldowns.delete(playerName); // 쿨타임 종료 시 삭제
-                player.runCommandAsync(`title @s actionbar §a쿨타임 종료`); // 쿨타임 종료 메시지
+                player.runCommand(`title @s actionbar §a쿨타임 종료`); // 쿨타임 종료 메시지
             }
         }
     }
