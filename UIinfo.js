@@ -41,14 +41,19 @@ world.beforeEvents.chatSend.subscribe((ev) => {
 // 스코어보드를 설정하는 함수
 function setupScoreboard(player) {
     system.run(() => {
-        // 스코어보드 생성 및 초기화 (API 방식)
-        const moneyObj = world.scoreboard.getObjective("money") ?? world.scoreboard.addObjective("money", "소지금");
-        const levelObj = world.scoreboard.getObjective("level") ?? world.scoreboard.addObjective("level", "레벨");
-        for (const p of world.getAllPlayers()) {
-            moneyObj.setScore(p, 0);
-            levelObj.setScore(p, 0);
+        try {
+            // 스코어보드 생성 및 초기화 (API 방식)
+            const moneyObj = world.scoreboard.getObjective("money") ?? world.scoreboard.addObjective("money", "소지금");
+            const levelObj = world.scoreboard.getObjective("level") ?? world.scoreboard.addObjective("level", "레벨");
+            for (const p of world.getAllPlayers()) {
+                moneyObj.setScore(p, 0);
+                levelObj.setScore(p, 0);
+            }
+            player.sendMessage("스코어보드가 설정되었습니다. 'money'와 'level' 값이 0으로 초기화되었습니다.");
+        } catch (error) {
+            console.warn("스코어보드 설정 중 오류:", error);
+            player.sendMessage("§c스코어보드 설정 중 오류가 발생했습니다.");
         }
-        player.sendMessage("스코어보드가 설정되었습니다. 'money'와 'level' 값이 0으로 초기화되었습니다.");
     });
 }
 
@@ -67,44 +72,67 @@ world.afterEvents.playerInteractWithEntity.subscribe((event) => {
 // 플레이어 자신의 정보를 UI로 표시하는 함수
 function myInfo(player) {
     system.run(() => {
-        const form = new ActionFormData(); // UI 폼 생성
+        try {
+            const form = new ActionFormData(); // UI 폼 생성
 
-        // 직업 태그 추출
-        const tags = player.getTags();
-        const job = tags.length > 0 ? tags[0] : "없음";
+            // 직업 태그 추출
+            const tags = player.getTags();
+            const job = tags.length > 0 ? tags[0] : "없음";
 
-        form.title(player.name + `님의 정보`); // 폼 제목 설정
-        form.body(`이름: ${player.name}\n직업: ${job}\n소지금: ${getScore(player, `money`)} 원\n레벨: ${getScore(player, `level`)} Lv`); // 정보 출력
-        form.button(`닫기`); // 닫기 버튼 추가
+            form.title(player.name + `님의 정보`); // 폼 제목 설정
+            form.body(`이름: ${player.name}\n직업: ${job}\n소지금: ${getScore(player, `money`)} 원\n레벨: ${getScore(player, `level`)} Lv`); // 정보 출력
+            form.button(`닫기`); // 닫기 버튼 추가
 
-        form.show(player).then(response => {
-            if (response.cancelationReason == "UserBusy") { // 사용자가 다른 UI를 사용 중이라면
-                myInfo(player); // 다시 폼을 표시
-            }
-        });
+            form.show(player).then(response => {
+                if (response.cancelationReason == "UserBusy") { // 사용자가 다른 UI를 사용 중이라면
+                    myInfo(player); // 다시 폼을 표시
+                }
+            }).catch(error => {
+                console.warn("UI 표시 중 오류:", error);
+            });
+        } catch (error) {
+            console.warn("플레이어 정보 표시 중 오류:", error);
+            player.sendMessage("§c정보를 표시하는 중 오류가 발생했습니다.");
+        }
     });
 }
 
 // 다른 플레이어의 정보를 UI로 표시하는 함수
 function Info(player, target) {
     system.run(() => {
-        const form = new ActionFormData(); // UI 폼 생성
+        try {
+            const form = new ActionFormData(); // UI 폼 생성
 
-        // 직업 태그 추출
-        const tags = target.getTags();
-        const job = tags.length > 0 ? tags[0] : "없음";
+            // 직업 태그 추출
+            const tags = target.getTags();
+            const job = tags.length > 0 ? tags[0] : "없음";
 
-        form.title(target.name + `님의 정보`); // 대상 플레이어의 이름을 폼 제목으로 설정
-        form.body(`이름: ${target.name}\n직업: ${job}\n소지금: ${getScore(target, `money`)} 원\n레벨: ${getScore(target, `level`)} Lv`); // 대상의 소지금 및 레벨 정보 출력
-        form.button(`닫기`); // 닫기 버튼 추가
+            form.title(target.name + `님의 정보`); // 대상 플레이어의 이름을 폼 제목으로 설정
+            form.body(`이름: ${target.name}\n직업: ${job}\n소지금: ${getScore(target, `money`)} 원\n레벨: ${getScore(target, `level`)} Lv`); // 대상의 소지금 및 레벨 정보 출력
+            form.button(`닫기`); // 닫기 버튼 추가
 
-        form.show(player).then(response => {
-            if (response.canceled) return; // 폼이 취소되면 아무 작업도 하지 않음
-        });
+            form.show(player).then(response => {
+                if (response.canceled) return; // 폼이 취소되면 아무 작업도 하지 않음
+            }).catch(error => {
+                console.warn("UI 표시 중 오류:", error);
+            });
+        } catch (error) {
+            console.warn("플레이어 정보 표시 중 오류:", error);
+            player.sendMessage("§c정보를 표시하는 중 오류가 발생했습니다.");
+        }
     });
 }
 
 // 특정 플레이어의 스코어보드 점수를 가져오는 함수
 function getScore(entity, id) {
-    return world.scoreboard.getObjective(id).getScore(entity); // 스코어보드에서 지정된 ID의 점수를 반환
+    try {
+        const objective = world.scoreboard.getObjective(id);
+        if (objective) {
+            return objective.getScore(entity); // 스코어보드에서 지정된 ID의 점수를 반환
+        }
+        return 0; // 목표가 없으면 0 반환
+    } catch (error) {
+        console.warn(`스코어 조회 중 오류 (${id}):`, error);
+        return 0;
+    }
 }

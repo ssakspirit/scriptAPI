@@ -52,7 +52,7 @@ import { ActionFormData } from "@minecraft/server-ui";
 function showBlockUI(player, blockType, pos) {
     // 블록 이름 가져오기 (minecraft: 접두사 제거 및 _block 제거)
     const blockName = blockType.replace("minecraft:", "").replace("_block", "").replace(/_/g, " ");
-    
+
     const form = new ActionFormData()
         .title(blockName.toUpperCase());
 
@@ -63,10 +63,10 @@ function showBlockUI(player, blockType, pos) {
                 .button("점프 부스트", "textures/items/diamond")
                 .button("체력 회복", "textures/items/apple")
                 .button("발광 효과", "textures/items/glowstone_dust");
-            
+
             form.show(player).then((response) => {
                 if (response.canceled) return;
-                
+
                 switch (response.selection) {
                     case 0:
                         player.runCommandAsync("effect @p jump_boost 200 1");
@@ -89,10 +89,10 @@ function showBlockUI(player, blockType, pos) {
                 .button("신속", "textures/items/emerald")
                 .button("야간 투시", "textures/items/blaze_powder")
                 .button("투명화", "textures/items/potion_bottle_invisibility");
-            
+
             form.show(player).then((response) => {
                 if (response.canceled) return;
-                
+
                 switch (response.selection) {
                     case 0:
                         player.runCommandAsync("effect @p speed 200 2");
@@ -121,8 +121,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((e) => {
     try {
         // 첫 번째 이벤트인 경우에만 처리
         if (e.isFirstEvent) {
-            // 맨손으로 상호작용하는 경우 (아이템이 없는 경우)
-            if (!item && (block.typeId === "minecraft:diamond_block" || block.typeId === "minecraft:emerald_block")) {
+            // 블록 유효성 확인 후 맨손으로 상호작용하는 경우 (아이템이 없는 경우)
+            if (block.isValid() && !item && (block.typeId === "minecraft:diamond_block" || block.typeId === "minecraft:emerald_block")) {
                 e.cancel = true; // 기본 상호작용 취소
                 system.run(() => {
                     showBlockUI(player, block.typeId, block.location);

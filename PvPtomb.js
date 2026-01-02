@@ -31,7 +31,7 @@ world.beforeEvents.chatSend.subscribe((event) => {
     // !부활 명령어 처리
     if (message.startsWith("!부활 ")) {
         event.cancel = true;  // 채팅 메시지 표시 취소
-        
+
         // 관리자 권한 확인
         if (!player.isOp()) {
             player.sendMessage("§c이 명령어는 관리자만 사용할 수 있습니다!");
@@ -50,7 +50,7 @@ world.beforeEvents.chatSend.subscribe((event) => {
         // 해당 플레이어의 묘비 찾기
         const graveName = `§8† §7${targetName}의 묘비 §8†`;
         const dimension = world.getDimension("overworld");
-        
+
         // 묘비 제거 및 플레이어 부활
         dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run tp ${targetName} ~ ~ ~`).then(() => {
             dimension.runCommandAsync(`kill @e[type=armor_stand,name="${graveName}"]`);
@@ -77,32 +77,32 @@ world.beforeEvents.chatSend.subscribe((event) => {
 // 플레이어 사망 이벤트
 world.afterEvents.entityDie.subscribe((event) => {
     const entity = event.deadEntity;
-    
+
     // 사망한 엔티티가 플레이어인지 확인
     if (entity.typeId === "minecraft:player") {
         // 관전자 모드로 변경
         entity.runCommandAsync("gamemode spectator @s");
-        
+
         // 사망한 플레이어의 이름 위에 표시
         entity.nameTag = "§c☠ §f" + entity.name + " §c☠";
-        
+
         // 모든 플레이어에게 사망 메시지 표시
         world.getAllPlayers().forEach(player => {
             player.sendMessage(`§c${entity.name}님이 사망하셨습니다!`);
             player.runCommandAsync(`title @s actionbar §c${entity.name}님이 사망하셨습니다!`);
         });
-        
+
         // 사망한 플레이어에게 메시지
         entity.sendMessage("§c사망하여 관전자 모드로 변경되었습니다.");
-        
+
         const location = entity.location;
-        
+
         // 묘비 이름 설정 (단순화)
         const graveName = `§8† §7${entity.name}의 묘비 §8†`;
-        
+
         // 묘비로 사용할 아머스탠드 소환 (이름 포함)
         entity.runCommandAsync(`summon armor_stand "${graveName}" ${location.x} ${location.y} ${location.z}`);
-        
+
         // 아머스탠드와 플레이어 매핑 저장
         const armorStandCheck = system.runInterval(() => {
             try {
@@ -119,28 +119,28 @@ world.afterEvents.entityDie.subscribe((event) => {
                     type: "armor_stand",
                     name: graveName
                 })];
-                
+
                 // 아머스탠드가 없다면 (부숴졌다면)
                 if (armorStands.length === 0 && tombMap.has(entity.name)) {
                     // 마지막 묘비 위치로 텔레포트
                     const lastLocation = tombMap.get(entity.name).location;
                     entity.teleport(lastLocation);
-                    
+
                     // 플레이어 권한 변경
                     entity.runCommandAsync("gamemode survival @s");
                     // 이름태그 원래대로
                     entity.nameTag = entity.name;
                     entity.sendMessage("§a묘비가 파괴되어 다시 전투에 참여할 수 있습니다!");
-                    
+
                     // 모든 플레이어에게 알림
                     world.getAllPlayers().forEach(p => {
                         p.sendMessage(`§e${entity.name}님이 다시 전투에 참여합니다!`);
                     });
-                    
+
                     // 인터벌 제거 및 매핑 제거
                     system.clearRun(armorStandCheck);
                     tombMap.delete(entity.name);
-                    
+
                     // 파티클 효과 제거
                     if (particleMap.has(entity.name)) {
                         system.clearRun(particleMap.get(entity.name));
@@ -161,7 +161,7 @@ world.afterEvents.entityDie.subscribe((event) => {
                 tombMap.delete(entity.name);
             }
         }, 10);
-        
+
         // 파티클 효과
         const particleInterval = system.runInterval(() => {
             try {
@@ -174,20 +174,20 @@ world.afterEvents.entityDie.subscribe((event) => {
                 }
 
                 // 파티클 효과 적용
-                entity.runCommandAsync(`execute at @s run particle minecraft:villager_angry ~ ~2 ~`).catch(() => {});
-                entity.runCommandAsync(`execute at @s run particle minecraft:dragon_breath_trail ~ ~1 ~`).catch(() => {});
-                
+                entity.runCommandAsync(`execute at @s run particle minecraft:villager_angry ~ ~2 ~`).catch(() => { });
+                entity.runCommandAsync(`execute at @s run particle minecraft:dragon_breath_trail ~ ~1 ~`).catch(() => { });
+
                 // 묘비 주변에 여러 파티클 효과
                 const dimension = world.getDimension("overworld");
-                dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:endrod ~ ~0.5 ~`).catch(() => {});
-                dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:basic_smoke_particle ~ ~0.3 ~`).catch(() => {});
+                dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:endrod ~ ~0.5 ~`).catch(() => { });
+                dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:basic_smoke_particle ~ ~0.3 ~`).catch(() => { });
             } catch (error) {
                 // 오류 발생 시 인터벌 정리
                 system.clearRun(particleInterval);
                 particleMap.delete(entity.name);
             }
         }, 5);
-        
+
         // 파티클 인터벌 저장
         particleMap.set(entity.name, particleInterval);
     }
@@ -196,13 +196,13 @@ world.afterEvents.entityDie.subscribe((event) => {
 // 플레이어 퇴장 이벤트 추가
 world.afterEvents.playerLeave.subscribe((event) => {
     const player = event.playerName;
-    
+
     // 파티클 효과 제거
     if (particleMap.has(player)) {
         system.clearRun(particleMap.get(player));
         particleMap.delete(player);
     }
-    
+
     // 인터벌 제거
     if (tombMap.has(player)) {
         system.clearRun(tombMap.get(player).interval);

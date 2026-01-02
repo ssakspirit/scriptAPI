@@ -418,18 +418,22 @@ function startCooldown(player, enchantId) {
 
 // 쿨타임 표시 시스템 수정 (0.5초마다 갱신)
 system.runInterval(() => {
-    for (const player of world.getAllPlayers()) {
-        const activeCooldowns = cooldownManager.getPlayerCooldowns(player);
+    try {
+        for (const player of world.getAllPlayers()) {
+            const activeCooldowns = cooldownManager.getPlayerCooldowns(player);
 
-        if (activeCooldowns.length > 0) {
-            const cooldownTexts = activeCooldowns.map(cooldown => {
-                const enchant = CUSTOM_ENCHANTS[cooldown.enchantId];
-                return `§b${enchant.name}: §f${cooldown.remainingTime}초`;
-            });
+            if (activeCooldowns.length > 0) {
+                const cooldownTexts = activeCooldowns.map(cooldown => {
+                    const enchant = CUSTOM_ENCHANTS[cooldown.enchantId];
+                    return `§b${enchant.name}: §f${cooldown.remainingTime}초`;
+                });
 
-            const actionBarText = cooldownTexts.join(" §7| ");
-            player.onScreenDisplay.setActionBar(actionBarText);
+                const actionBarText = cooldownTexts.join(" §7| ");
+                player.onScreenDisplay.setActionBar(actionBarText);
+            }
         }
+    } catch (error) {
+        console.warn("쿨타임 표시 중 오류:", error);
     }
 }, 10);
 
@@ -1137,34 +1141,38 @@ world.beforeEvents.itemUse.subscribe((event) => {
 
 // 패시브 인챈트 효과 적용 (5초마다 갱신)
 system.runInterval(() => {
-    for (const player of world.getAllPlayers()) {
-        const armor = player.getComponent("equippable");
+    try {
+        for (const player of world.getAllPlayers()) {
+            const armor = player.getComponent("equippable");
 
-        // 흉갑 효과 체크
-        const chestplate = armor.getEquipment("Chest");
-        if (chestplate) {
-            const lore = chestplate.getLore();
-            // 아늑함 효과
-            if (lore.some(line => line.includes(CUSTOM_ENCHANTS.COZY.id))) {
-                const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.COZY.id)).split("_").pop());
-                player.runCommandAsync(`effect @s regeneration 30 ${level - 1} true`);
+            // 흉갑 효과 체크
+            const chestplate = armor.getEquipment("Chest");
+            if (chestplate) {
+                const lore = chestplate.getLore();
+                // 아늑함 효과
+                if (lore.some(line => line.includes(CUSTOM_ENCHANTS.COZY.id))) {
+                    const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.COZY.id)).split("_").pop());
+                    player.runCommandAsync(`effect @s regeneration 30 ${level - 1} true`);
+                }
+            }
+
+            const boots = armor.getEquipment("Feet");
+            if (boots) {
+                const lore = boots.getLore();
+                // 신속의 부츠 효과
+                if (lore.some(line => line.includes(CUSTOM_ENCHANTS.SPEED_BOOST.id))) {
+                    const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.SPEED_BOOST.id)).split("_").pop());
+                    player.runCommandAsync(`effect @s speed 30 ${level - 1} true`);
+                }
+                // 도약의 부츠 효과
+                if (lore.some(line => line.includes(CUSTOM_ENCHANTS.JUMP_BOOST.id))) {
+                    const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.JUMP_BOOST.id)).split("_").pop());
+                    player.runCommandAsync(`effect @s jump_boost 30 ${level - 1} true`);
+                }
             }
         }
-
-        const boots = armor.getEquipment("Feet");
-        if (boots) {
-            const lore = boots.getLore();
-            // 신속의 부츠 효과
-            if (lore.some(line => line.includes(CUSTOM_ENCHANTS.SPEED_BOOST.id))) {
-                const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.SPEED_BOOST.id)).split("_").pop());
-                player.runCommandAsync(`effect @s speed 30 ${level - 1} true`);
-            }
-            // 도약의 부츠 효과
-            if (lore.some(line => line.includes(CUSTOM_ENCHANTS.JUMP_BOOST.id))) {
-                const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.JUMP_BOOST.id)).split("_").pop());
-                player.runCommandAsync(`effect @s jump_boost 30 ${level - 1} true`);
-            }
-        }
+    } catch (error) {
+        console.warn("패시브 인챈트 효과 적용 중 오류:", error);
     }
 }, 100); // 5초마다 효과 갱신 (100틱 = 5초)
 
@@ -1238,14 +1246,15 @@ const playerPositions = new Map();
 
 // 플레이어 위치 및 속도 추적
 system.runInterval(() => {
-    for (const player of world.getAllPlayers()) {
-        const currentY = player.location.y;
-        const posInfo = playerPositions.get(player.id) || { 
-            lastY: currentY, 
-            velocity: 0, 
-            maxFallHeight: currentY,
-            isFalling: false 
-        };
+    try {
+        for (const player of world.getAllPlayers()) {
+            const currentY = player.location.y;
+            const posInfo = playerPositions.get(player.id) || {
+                lastY: currentY,
+                velocity: 0,
+                maxFallHeight: currentY,
+                isFalling: false
+            };
         
         // Y축 속도 계산 (1틱당 Y좌표 변화)
         posInfo.velocity = currentY - posInfo.lastY;
@@ -1326,10 +1335,13 @@ system.runInterval(() => {
             posInfo.isFalling = false;
         }
         
-        // 현재 상태 저장
-        posInfo.lastY = currentY;
-        posInfo.lastVelocity = posInfo.velocity;
-        playerPositions.set(player.id, posInfo);
+            // 현재 상태 저장
+            posInfo.lastY = currentY;
+            posInfo.lastVelocity = posInfo.velocity;
+            playerPositions.set(player.id, posInfo);
+        }
+    } catch (error) {
+        console.warn("슈퍼 히어로 랜딩 추적 중 오류:", error);
     }
 }, 1);
 // **슈퍼 히어로 랜딩 효과 코드 끝**
@@ -1455,50 +1467,54 @@ const shieldUsers = new Map(); // 방패 사용자 추적
 
 // 매 틱마다 방패 사용 체크
 system.runInterval(() => {
-    for (const player of world.getAllPlayers()) {
-        const item = getItem(player);
-        
-        // 방패를 들고 있고 웅크리고 있는지 확인
-        if (item?.typeId === "minecraft:shield" && player.isSneaking) {
-            const lore = item.getLore();
-            if (!lore) continue;
-            
-            // 티타늄 도배 인챈트 확인
-            if (lore.some(line => line.includes(CUSTOM_ENCHANTS.TITANIUM_SHIELD.id))) {
-                if (!shieldUsers.has(player.id)) {
-                    // 효과음 및 파티클
-                    player.runCommandAsync(`playsound item.shield.block @a ~~~ 1 1`);
-                    player.runCommandAsync(`particle minecraft:villager_happy ~~~`);
-                    player.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§b티타늄 도배의 방어 태세가 시작되었습니다!"}]}`);
-                    
-                    // 무적 처리 + 구속
-                    player.runCommandAsync(`effect @s absorption 255 3 true`);
-                    player.runCommandAsync(`effect @s slowness 255 3 true`);
-                    
-                    // 방어 시작 시간 기록
-                    shieldUsers.set(player.id, Date.now());
-                } else {
-                    // 3초마다 파티클 효과
-                    const lastTime = shieldUsers.get(player.id);
-                    if (Date.now() - lastTime >= 3000) {
+    try {
+        for (const player of world.getAllPlayers()) {
+            const item = getItem(player);
+
+            // 방패를 들고 있고 웅크리고 있는지 확인
+            if (item?.typeId === "minecraft:shield" && player.isSneaking) {
+                const lore = item.getLore();
+                if (!lore) continue;
+
+                // 티타늄 도배 인챈트 확인
+                if (lore.some(line => line.includes(CUSTOM_ENCHANTS.TITANIUM_SHIELD.id))) {
+                    if (!shieldUsers.has(player.id)) {
+                        // 효과음 및 파티클
+                        player.runCommandAsync(`playsound item.shield.block @a ~~~ 1 1`);
                         player.runCommandAsync(`particle minecraft:villager_happy ~~~`);
+                        player.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§b티타늄 도배의 방어 태세가 시작되었습니다!"}]}`);
+
+                        // 무적 처리 + 구속
+                        player.runCommandAsync(`effect @s absorption 255 3 true`);
+                        player.runCommandAsync(`effect @s slowness 255 3 true`);
+
+                        // 방어 시작 시간 기록
                         shieldUsers.set(player.id, Date.now());
+                    } else {
+                        // 3초마다 파티클 효과
+                        const lastTime = shieldUsers.get(player.id);
+                        if (Date.now() - lastTime >= 3000) {
+                            player.runCommandAsync(`particle minecraft:villager_happy ~~~`);
+                            shieldUsers.set(player.id, Date.now());
+                        }
                     }
                 }
-            }
-        } else {
-            // 방어 자세를 풀었을 때
-            if (shieldUsers.has(player.id)) {
-                player.runCommandAsync(`playsound item.shield.block @a ~~~ 1 0.5`);
-                player.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§7티타늄 도배의 방어 태세가 해제되었습니다."}]}`);
-                
-                // 효과 제거
-                player.runCommandAsync(`effect @s absorption 0`);
-                player.runCommandAsync(`effect @s slowness 0`);
-                
-                shieldUsers.delete(player.id);
+            } else {
+                // 방어 자세를 풀었을 때
+                if (shieldUsers.has(player.id)) {
+                    player.runCommandAsync(`playsound item.shield.block @a ~~~ 1 0.5`);
+                    player.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§7티타늄 도배의 방어 태세가 해제되었습니다."}]}`);
+
+                    // 효과 제거
+                    player.runCommandAsync(`effect @s absorption 0`);
+                    player.runCommandAsync(`effect @s slowness 0`);
+
+                    shieldUsers.delete(player.id);
+                }
             }
         }
+    } catch (error) {
+        console.warn("티타늄 도배 효과 처리 중 오류:", error);
     }
 }, 1);
 // **티타늄 도배 효과 처리 끝**

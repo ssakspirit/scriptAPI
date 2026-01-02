@@ -98,12 +98,16 @@ function getRemainingCooldown(player) {
 
 // 쿨타임 표시 인터벌
 system.runInterval(() => {
-    for (const player of world.getAllPlayers()) {
-        const remaining = getRemainingCooldown(player);
-        if (remaining > 0) {
-            // 쿨타임을 액션바에 표시
-            player.runCommandAsync(`title @s actionbar §c대쉬 쿨타임: ${remaining.toFixed(1)}초`);
+    try {
+        for (const player of world.getAllPlayers()) {
+            const remaining = getRemainingCooldown(player);
+            if (remaining > 0) {
+                // 쿨타임을 액션바에 표시
+                player.onScreenDisplay.setActionBar(`§c대쉬 쿨타임: ${remaining.toFixed(1)}초`);
+            }
         }
+    } catch (error) {
+        console.warn("쿨타임 표시 중 오류:", error);
     }
 }, 1);
 

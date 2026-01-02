@@ -545,13 +545,10 @@ world.beforeEvents.chatSend.subscribe(event => {
     }
 });
 
-// 시스템 초기화
-world.afterEvents.worldLoad.subscribe(() => {
-    // 초기 데이터 로드
-    loadShopData();
-    
-    // 주기적으로 데이터 저장 (5분마다)
-    system.runInterval(() => {
-        saveShopData();
-    }, 6000); // 6000틱 = 5분
-});
+// 시스템 초기화 - 초기 데이터 로드
+loadShopData();
+
+// 주기적으로 데이터 저장 (5분마다)
+system.runInterval(() => {
+    saveShopData();
+}, 6000); // 6000틱 = 5분

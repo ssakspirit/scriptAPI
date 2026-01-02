@@ -79,24 +79,54 @@ class PlayerEnhancement {
     applyStats(player, level) {
         try {
             // 모든 효과 초기화
-            player.runCommand(`effect @s clear`);
-            
-            // 레벨별 효과 적용
+            const effects = player.getEffects();
+            for (const effect of effects) {
+                player.removeEffect(effect.typeId);
+            }
+
+            // 레벨별 효과 적용 (999999틱 = 약 13시간)
             switch(level) {
                 case 4: // 전설
-                    player.runCommand(`effect @s health_boost 999999 4 true`);
-                    player.runCommand(`effect @s resistance 999999 3 true`);
-                    player.runCommand(`effect @s speed 999999 2 true`);
+                    player.addEffect("health_boost", 999999, {
+                        amplifier: 4,
+                        showParticles: false
+                    });
+                    player.addEffect("resistance", 999999, {
+                        amplifier: 3,
+                        showParticles: false
+                    });
+                    player.addEffect("speed", 999999, {
+                        amplifier: 2,
+                        showParticles: false
+                    });
                     break;
                 case 3: // 정예
-                    player.runCommand(`effect @s health_boost 999999 3 true`);
-                    player.runCommand(`effect @s resistance 999999 2 true`);
-                    player.runCommand(`effect @s speed 999999 1 true`);
+                    player.addEffect("health_boost", 999999, {
+                        amplifier: 3,
+                        showParticles: false
+                    });
+                    player.addEffect("resistance", 999999, {
+                        amplifier: 2,
+                        showParticles: false
+                    });
+                    player.addEffect("speed", 999999, {
+                        amplifier: 1,
+                        showParticles: false
+                    });
                     break;
                 case 2: // 각성
-                    player.runCommand(`effect @s health_boost 999999 2 true`);
-                    player.runCommand(`effect @s resistance 999999 1 true`);
-                    player.runCommand(`effect @s speed 999999 0 true`);
+                    player.addEffect("health_boost", 999999, {
+                        amplifier: 2,
+                        showParticles: false
+                    });
+                    player.addEffect("resistance", 999999, {
+                        amplifier: 1,
+                        showParticles: false
+                    });
+                    player.addEffect("speed", 999999, {
+                        amplifier: 0,
+                        showParticles: false
+                    });
                     break;
             }
             
@@ -261,7 +291,10 @@ class PlayerEnhancement {
             await system.run(async () => {
                 try {
                     // 모든 효과 제거 후 수련 효과 적용
-                    player.runCommand(`effect @s clear`);
+                    const effects = player.getEffects();
+                    for (const effect of effects) {
+                        player.removeEffect(effect.typeId);
+                    }
                     this.applyStats(player, 1);
                     
                     // 이름표 설정
