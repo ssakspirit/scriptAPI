@@ -61,7 +61,7 @@ function showForm(player) {
                 z: player.location.z
             };
 
-            player.runCommandAsync("title @a actionbar 위치 저장 완료");
+            player.runCommand("title @a actionbar 위치 저장 완료");
         }
 
         // 위치로 이동하기
@@ -69,10 +69,10 @@ function showForm(player) {
             const position = playerPositions[player.name];
 
             if (!position) {
-                player.runCommandAsync("title @a actionbar 저장된 장소가 없음");
+                player.runCommand("title @a actionbar 저장된 장소가 없음");
             } else {
-                player.runCommandAsync(`tp @s ${position.x} ${position.y} ${position.z}`);
-                player.runCommandAsync("title @a actionbar 이동 완료");
+                player.runCommand(`tp @s ${position.x} ${position.y} ${position.z}`);
+                player.runCommand("title @a actionbar 이동 완료");
             }
         }
     });
