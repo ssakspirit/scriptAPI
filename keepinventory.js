@@ -17,7 +17,7 @@ let inventorySaveEnabled = false;
 function toggleInventorySave() {
     inventorySaveEnabled = !inventorySaveEnabled;
     system.run(() => {
-        world.getDimension("overworld").runCommandAsync(`gamerule keepinventory ${inventorySaveEnabled}`);
+        world.getDimension("overworld").runCommand(`gamerule keepinventory ${inventorySaveEnabled}`);
     });
     return inventorySaveEnabled;
 }

@@ -238,7 +238,7 @@ const SYSTEM_CONFIG = {
 async function exchangeItem(player, currentItem, newItemId, cost) {
     try {
         // 에메랄드 확인
-        const hasEmeralds = await player.runCommandAsync(`testfor @s[hasitem={item=emerald,quantity=${cost}}]`);
+        const hasEmeralds = player.runCommand(`testfor @s[hasitem={item=emerald,quantity=${cost}}]`);
         if (!hasEmeralds) {
             player.sendMessage(`§c에메랄드가 부족합니다. (필요: ${cost}개)`);
             return;
@@ -258,7 +258,7 @@ async function exchangeItem(player, currentItem, newItemId, cost) {
 
         if (!isSuccess) {
             // 에메랄드 차감
-            await player.runCommandAsync(`clear @s emerald 0 ${cost}`);
+            player.runCommand(`clear @s emerald 0 ${cost}`);
 
             if (SYSTEM_CONFIG.DESTROY_ON_FAIL) {
                 // 아이템 파괴 설정이 켜져있을 때만 아이템 제거
@@ -294,16 +294,16 @@ async function exchangeItem(player, currentItem, newItemId, cost) {
         }
 
         // 에메랄드 차감
-        await player.runCommandAsync(`clear @s emerald 0 ${cost}`);
+        player.runCommand(`clear @s emerald 0 ${cost}`);
         
         // 새 아이템 지급
-        await player.runCommandAsync(`give @s ${newItemId} 1`);
+        player.runCommand(`give @s ${newItemId} 1`);
 
         // 인챈트 적용
         system.runTimeout(async () => {
             try {
                 for (const enchant of enchantments) {
-                    await player.runCommandAsync(`enchant @s ${enchant.id} ${enchant.level}`);
+                    player.runCommand(`enchant @s ${enchant.id} ${enchant.level}`);
                 }
                 player.sendMessage(`§a${isUpgrading ? '강화' : '다운그레이드'} 성공! (성공 확률: ${chance}%)`);
             } catch (error) {

@@ -34,8 +34,8 @@ const score_id = "rank";
 
 // 일정 간격으로 플레이어 칭호 업데이트 함수를 실행 (2 틱마다 실행)
 system.runInterval(() => {
-    world.getDimension("overworld").runCommandAsync(`scoreboard objectives add ${score_id} dummy`);
-    world.getDimension("overworld").runCommandAsync(`scoreboard players add @a ${score_id} 0`);
+    world.getDimension("overworld").runCommand(`scoreboard objectives add ${score_id} dummy`);
+    world.getDimension("overworld").runCommand(`scoreboard players add @a ${score_id} 0`);
 
     for (const player of world.getAllPlayers()) {
         setRank(player);

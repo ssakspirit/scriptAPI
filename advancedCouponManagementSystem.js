@@ -116,11 +116,27 @@ function useCoupon(player, couponCode) {
     const coupon = coupons[couponCode];
     try {
         // 보상 지급 (서버 권한으로 실행)
+        let rewardSuccess = false;
         system.run(() => {
-            world.getDimension("overworld").runCommand(
-                coupon.reward.replace(/@s/g, player.name)
-            );
+            try {
+                const result = world.getDimension("overworld").runCommand(
+                    coupon.reward.replace(/@s/g, player.name)
+                );
+                rewardSuccess = result.successCount > 0;
+
+                if (!rewardSuccess) {
+                    player.sendMessage("§c보상 지급에 실패했습니다.");
+                    console.warn(`쿠폰 보상 실패: ${couponCode}, 명령어: ${coupon.reward}`);
+                }
+            } catch (cmdError) {
+                console.warn(`쿠폰 명령어 실행 오류: ${couponCode}`, cmdError);
+                player.sendMessage("§c보상 지급 중 오류가 발생했습니다.");
+            }
         });
+
+        if (!rewardSuccess) {
+            return;
+        }
 
         // 사용 기록 저장
         if (!usedCoupons[player.name]) {

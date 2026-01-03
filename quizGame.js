@@ -91,8 +91,8 @@ function askQuestion() {
     // 플레이어에게 문제 제시 
     world.getPlayers().forEach((player) => { 
         player.sendMessage(currentQuestion.question); 
-        world.getDimension("overworld").runCommandAsync(`title @a subtitle ${currentQuestion.question}`) 
-        world.getDimension("overworld").runCommandAsync(`title @a title ${currentQuestionIndex + 1}번 문제`) 
+        world.getDimension("overworld").runCommand(`title @a subtitle ${currentQuestion.question}`) 
+        world.getDimension("overworld").runCommand(`title @a title ${currentQuestionIndex + 1}번 문제`) 
     }); 
 } 
 

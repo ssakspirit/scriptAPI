@@ -910,7 +910,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
 });
 
 // 서버 시작 시 초기화
-    system.run(() => {
+system.run(() => {
     initGuildSystem();
     initGuildWarSystem();
 });
@@ -1031,12 +1031,29 @@ function deleteGuild(player, guildName) {
 
 
 // **길드 전쟁 시스템**
+
+// 안전한 명령어 실행 헬퍼 함수
+function safeRunCommand(dimension, command, errorMessage) {
+    try {
+        const result = dimension.runCommand(command);
+        if (result.successCount === 0) {
+            console.warn(`명령어 실행 실패: ${command}`);
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.warn(errorMessage || `명령어 오류 (${command}):`, error);
+        return false;
+    }
+}
+
 // 길드 전쟁 시스템 초기화
 function initGuildWarSystem() {
     system.run(() => {
         try {
             // 스코어보드 생성
-            world.getDimension("overworld").runCommand("scoreboard objectives add guildWar dummy \"길드 전쟁\"");
+            const dimension = world.getDimension("overworld");
+            safeRunCommand(dimension, "scoreboard objectives add guildWar dummy \"길드 전쟁\"", "스코어보드 생성 실패 (이미 존재할 수 있음)");
         } catch (error) {
             // 이미 존재하는 경우 무시
         }
@@ -1060,11 +1077,7 @@ function startGuildWar(player) {
         try {
             const dimension = world.getDimension("overworld");
             // 스코어보드 초기화
-            try {
-                dimension.runCommand("scoreboard objectives remove guildWar");
-            } catch (error) {
-                // 스코어보드가 없는 경우 무시
-            }
+            safeRunCommand(dimension, "scoreboard objectives remove guildWar", "스코어보드 제거 중 오류 (정상)");
 
             // 길드 전쟁 점수 초기화
             const warScores = {};
@@ -1074,25 +1087,26 @@ function startGuildWar(player) {
             world.setDynamicProperty('guildWarScores', JSON.stringify(warScores));
 
             system.runTimeout(() => {
-                try {
-                    dimension.runCommand("scoreboard objectives add guildWar dummy \"길드 전쟁\"");
-                    dimension.runCommand("scoreboard objectives setdisplay sidebar guildWar");
-
-                    // 각 길드의 초기 점수를 0으로 설정
-                    for (const guildName of Object.keys(guilds)) {
-                        dimension.runCommand(`scoreboard players set "${guildName}" guildWar 0`);
-                    }
-
-                    // 전역 변수로 전쟁 상태 설정
-                    world.setDynamicProperty('isGuildWarActive', true);
-
-                    // 모든 플레이어에게 알림
-                    world.sendMessage('§6=== 길드 전쟁이 시작되었습니다! ===');
-                    world.sendMessage('§e각 길드의 킬 수가 스코어보드에 표시됩니다.');
-                } catch (error) {
-                    console.warn('길드 전쟁 시작 중 오류 발생:', error);
-                    player.sendMessage('§c길드 전쟁을 시작하는 중 오류가 발생했습니다.');
+                if (!safeRunCommand(dimension, "scoreboard objectives add guildWar dummy \"길드 전쟁\"", "길드 전쟁 스코어보드 생성 실패")) {
+                    player.sendMessage("§c스코어보드 생성에 실패했습니다.");
+                    return;
                 }
+
+                if (!safeRunCommand(dimension, "scoreboard objectives setdisplay sidebar guildWar", "스코어보드 표시 설정 실패")) {
+                    player.sendMessage("§c스코어보드 표시 설정에 실패했습니다.");
+                }
+
+                // 각 길드의 초기 점수를 0으로 설정
+                for (const guildName of Object.keys(guilds)) {
+                    safeRunCommand(dimension, `scoreboard players set "${guildName}" guildWar 0`, `${guildName} 점수 설정 실패`);
+                }
+
+                // 전역 변수로 전쟁 상태 설정
+                world.setDynamicProperty('isGuildWarActive', true);
+
+                // 모든 플레이어에게 알림
+                world.sendMessage('§6=== 길드 전쟁이 시작되었습니다! ===');
+                world.sendMessage('§e각 길드의 킬 수가 스코어보드에 표시됩니다.');
             }, 10);
         } catch (error) {
             console.warn('길드 전쟁 시작 중 오류 발생:', error);
@@ -1111,7 +1125,7 @@ function endGuildWar(player) {
     system.run(() => {
         try {
             const dimension = world.getDimension("overworld");
-            
+
             // 진행 중인 길드 전쟁이 있는지 확인
             const isWarActive = world.getDynamicProperty('isGuildWarActive');
             if (!isWarActive) {
@@ -1139,7 +1153,7 @@ function endGuildWar(player) {
             // 결과 발표
             world.sendMessage('§6=== 길드 전쟁이 종료되었습니다! ===');
             world.sendMessage(`§e승리한 길드: §6${winner.name} §e(${winner.score}킬)`);
-            
+
             // 모든 길드의 최종 점수 표시
             world.sendMessage('§e=== 최종 순위 ===');
             scores.forEach((p, index) => {
@@ -1148,15 +1162,11 @@ function endGuildWar(player) {
 
             // 모든 결과를 표시한 후에 스코어보드와 동적 속성 제거
             system.runTimeout(() => {
-                try {
-                    // 전쟁 상태 및 점수 초기화
-                    world.setDynamicProperty('isGuildWarActive', false);
-                    world.setDynamicProperty('guildWarScores', '');
-                    // 스코어보드 제거
-                    dimension.runCommand("scoreboard objectives remove guildWar");
-                } catch (error) {
-                    console.warn('스코어보드 제거 중 오류 발생:', error);
-                }
+                // 전쟁 상태 및 점수 초기화
+                world.setDynamicProperty('isGuildWarActive', false);
+                world.setDynamicProperty('guildWarScores', '');
+                // 스코어보드 제거
+                safeRunCommand(dimension, "scoreboard objectives remove guildWar", "스코어보드 제거 중 오류");
             }, 100);
         } catch (error) {
             console.warn('길드 전쟁 종료 중 오류 발생:', error);
@@ -1214,32 +1224,31 @@ function handleGuildWarVictory(guildName, dimension) {
     if (!guild) return;
 
     const settings = JSON.parse(world.getDynamicProperty('guildWarSettings'));
-    
+
     // 승리 메시지 전송
     world.sendMessage('§6=== 길드 전쟁 승리! ===');
     world.sendMessage(`§e${guildName} 길드가 목표 킬 수(${settings.targetKills}킬)를 달성하여 승리했습니다!`);
-    
+
     // 보상 지급
     for (const memberName of guild.members) {
         const member = world.getAllPlayers().find(p => p.name === memberName);
         if (member) {
             // 에메랄드 지급 (플레이어 이름 직접 지정)
-            dimension.runCommand(`give "${memberName}" emerald ${settings.rewardEmeralds}`);
-            member.sendMessage(`§a길드 전쟁 승리 보상으로 에메랄드 ${settings.rewardEmeralds}개를 받았습니다!`);
+            if (safeRunCommand(dimension, `give "${memberName}" emerald ${settings.rewardEmeralds}`, `${memberName}에게 보상 지급 실패`)) {
+                member.sendMessage(`§a길드 전쟁 승리 보상으로 에메랄드 ${settings.rewardEmeralds}개를 받았습니다!`);
+            } else {
+                member.sendMessage(`§c보상 지급에 실패했습니다.`);
+            }
         }
     }
 
     // 전쟁 종료 처리
     system.runTimeout(() => {
-        try {
-            // 전쟁 상태 및 점수 초기화
-            world.setDynamicProperty('isGuildWarActive', false);
-            world.setDynamicProperty('guildWarScores', '');
-            // 스코어보드 제거
-            dimension.runCommand("scoreboard objectives remove guildWar");
-        } catch (error) {
-            console.warn('스코어보드 제거 중 오류 발생:', error);
-        }
+        // 전쟁 상태 및 점수 초기화
+        world.setDynamicProperty('isGuildWarActive', false);
+        world.setDynamicProperty('guildWarScores', '');
+        // 스코어보드 제거
+        safeRunCommand(dimension, "scoreboard objectives remove guildWar", "스코어보드 제거 중 오류");
     }, 100);
 }
 
@@ -1268,15 +1277,13 @@ world.afterEvents.entityDie.subscribe((event) => {
 
             // 설정된 목표 킬 수 확인
             const settings = JSON.parse(world.getDynamicProperty('guildWarSettings'));
-            
+
             // 동적 속성에 업데이트된 점수 저장
             world.setDynamicProperty('guildWarScores', JSON.stringify(warScores));
 
             system.runTimeout(() => {
-                try {
-                    // 스코어보드 표시 업데이트
-                    dimension.runCommand(`scoreboard players set "${killerGuildName}" guildWar ${warScores[killerGuildName]}`);
-
+                // 스코어보드 표시 업데이트
+                if (safeRunCommand(dimension, `scoreboard players set "${killerGuildName}" guildWar ${warScores[killerGuildName]}`, `${killerGuildName} 스코어 업데이트 실패`)) {
                     // 킬 알림
                     world.sendMessage(`§6${killerGuildName}§f 길드의 §e${killer.name}§f님이 §e${victim.name}§f님을 처치했습니다! (${warScores[killerGuildName]}/${settings.targetKills}킬)`);
 
@@ -1284,8 +1291,6 @@ world.afterEvents.entityDie.subscribe((event) => {
                     if (warScores[killerGuildName] >= settings.targetKills) {
                         handleGuildWarVictory(killerGuildName, dimension);
                     }
-                } catch (error) {
-                    console.warn('킬 점수 업데이트 중 오류 발생:', error);
                 }
             }, 5);
         } catch (error) {

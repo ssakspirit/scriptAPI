@@ -33,7 +33,7 @@ import { ActionFormData } from "@minecraft/server-ui";
  * 
  * 3. 버튼 기능 구현:
  *    - switch (response.selection) 구문 안에 case 추가
- *    - 명령어 실행: player.runCommandAsync("명령어")
+ *    - 명령어 실행: player.runCommand("명령어")
  *    - 메시지 전송: player.sendMessage("메시지")
  *    - 색상 코드: §a(초록), §b(하늘), §c(빨강), §e(노랑)
  * 
@@ -69,15 +69,15 @@ function showBlockUI(player, blockType, pos) {
 
                 switch (response.selection) {
                     case 0:
-                        player.runCommandAsync("effect @p jump_boost 200 1");
+                        player.runCommand("effect @p jump_boost 200 1");
                         player.sendMessage("§b점프 부스트 효과가 적용되었습니다!");
                         break;
                     case 1:
-                        player.runCommandAsync("effect @p instant_health 1 1");
+                        player.runCommand("effect @p instant_health 1 1");
                         player.sendMessage("§c체력이 회복되었습니다!");
                         break;
                     case 2:
-                        player.runCommandAsync("effect @p glowing 200 1");
+                        player.runCommand("effect @p glowing 200 1");
                         player.sendMessage("§e발광 효과가 적용되었습니다!");
                         break;
                 }
@@ -95,15 +95,15 @@ function showBlockUI(player, blockType, pos) {
 
                 switch (response.selection) {
                     case 0:
-                        player.runCommandAsync("effect @p speed 200 2");
+                        player.runCommand("effect @p speed 200 2");
                         player.sendMessage("§a신속 효과가 적용되었습니다!");
                         break;
                     case 1:
-                        player.runCommandAsync("effect @p night_vision 200 1");
+                        player.runCommand("effect @p night_vision 200 1");
                         player.sendMessage("§a야간 투시 효과가 적용되었습니다!");
                         break;
                     case 2:
-                        player.runCommandAsync("effect @p invisibility 200 1");
+                        player.runCommand("effect @p invisibility 200 1");
                         player.sendMessage("§a투명화 효과가 적용되었습니다!");
                         break;
                 }

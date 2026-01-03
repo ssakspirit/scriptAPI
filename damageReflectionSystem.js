@@ -43,13 +43,17 @@ world.afterEvents.entityHurt.subscribe((ev) => {
 
                 // 공격자에게 데미지 반사
                 attacker.applyDamage(damage);
-                
+
                 // 공격자 위치에 파티클 효과 표시
                 const loc = attacker.location;
-                attacker.runCommand(`particle minecraft:critical_hit_emitter ~~~`); // 공격자 주변에 크리티컬 효과
-                
-                // 반사 메시지 표시
-                hurtEntity.runCommand(`tellraw @s {"rawtext":[{"text":"§a${damage}의 데미지를 반사했습니다!"}]}`);
+                try {
+                    attacker.runCommand(`particle minecraft:critical_hit_emitter ~~~`);
+                } catch (particleError) {
+                    console.warn("파티클 효과 표시 실패:", particleError);
+                }
+
+                // 반사 메시지 표시 (tellraw 대신 sendMessage 사용)
+                hurtEntity.sendMessage(`§a${damage}의 데미지를 반사했습니다!`);
             } catch (error) {
                 console.warn("데미지 반사 처리 중 오류 발생:", error);
             }

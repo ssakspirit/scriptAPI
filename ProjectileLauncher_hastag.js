@@ -86,11 +86,14 @@ world.afterEvents.projectileHitBlock.subscribe((event) => {
 
             // 비동기적으로 폭발 처리
             system.run(() => {
-                if (projectile.isValid()) { // 화살이 유효한지 확인
+                try {
+                    // 엔티티가 유효한 경우에만 폭발 생성
                     projectile.dimension.createExplosion(hitLocation, 4, {
                         causesFire: false,
                         breaksBlocks: true,
                     });
+                } catch (error) {
+                    // 화살이 이미 제거되었거나 무효한 경우 무시
                 }
             });
         }

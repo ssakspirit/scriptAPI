@@ -114,9 +114,9 @@ export function buyForm(player, item, price) {
         const quantity = formValues[0];
         const totalPrice = quantity * price;
 
-        player.runCommandAsync(`give @s[hasitem={item=emerald, quantity=${totalPrice}..}] ${item_en} ${quantity}`);
-        player.runCommandAsync(`title @s[hasitem={item=emerald, quantity=${totalPrice}..}] actionbar ${item}을(를) 구매했습니다`);
-        player.runCommandAsync(`clear @s[hasitem={item=emerald, quantity=${totalPrice}..}] minecraft:emerald 0 ${totalPrice}`);
+        player.runCommand(`give @s[hasitem={item=emerald, quantity=${totalPrice}..}] ${item_en} ${quantity}`);
+        player.runCommand(`title @s[hasitem={item=emerald, quantity=${totalPrice}..}] actionbar ${item}을(를) 구매했습니다`);
+        player.runCommand(`clear @s[hasitem={item=emerald, quantity=${totalPrice}..}] minecraft:emerald 0 ${totalPrice}`);
     });
 }
 
@@ -132,10 +132,10 @@ export function sellForm(player, item, price) {
         const quantity = formValues[0];
         const totalPrice = quantity * price;
 
-        player.runCommandAsync(`clear @s[hasitem={item=${item_en}, quantity=${quantity}..}] ${item_en} 0 ${quantity}`)
-        player.runCommandAsync(`give @s[hasitem={item=${item_en}, quantity=${quantity}..}] minecraft:emerald ${totalPrice}`);
-        player.runCommandAsync(`title @s[hasitem={item=${item_en}, quantity=${quantity}..}] actionbar ${item}을(를) 판매했습니다`);
-        player.runCommandAsync(`title @s[hasitem={item=${item_en}, quantity=..${quantity}}] actionbar ${item}이(가) 충분하지 않습니다`);
+        player.runCommand(`clear @s[hasitem={item=${item_en}, quantity=${quantity}..}] ${item_en} 0 ${quantity}`)
+        player.runCommand(`give @s[hasitem={item=${item_en}, quantity=${quantity}..}] minecraft:emerald ${totalPrice}`);
+        player.runCommand(`title @s[hasitem={item=${item_en}, quantity=${quantity}..}] actionbar ${item}을(를) 판매했습니다`);
+        player.runCommand(`title @s[hasitem={item=${item_en}, quantity=..${quantity}}] actionbar ${item}이(가) 충분하지 않습니다`);
 
     });
 }

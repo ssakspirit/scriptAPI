@@ -48,7 +48,7 @@ world.beforeEvents.itemUse.subscribe(async (ev) => {
         //귀환서 1회용 사용으로 추가된 코드(여러 번 사용하려면 이부분을 지우세요.)
         // clear 명령어로 귀환서 1개 제거
         try {
-            await player.runCommandAsync(`clear @s ${itemType} 0 1`);
+            player.runCommand(`clear @s ${itemType} 0 1`);
         } catch (e) {
             console.warn("아이템 제거에 실패했습니다:", e);
         }

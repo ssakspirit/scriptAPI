@@ -50,19 +50,41 @@ world.afterEvents.entityHurt.subscribe((ev) => {
                     // 회피 성공
                     // 데미지에 비례하여 회복 효과 레벨 계산
                     const healLevel = Math.min(Math.floor(damage / 4), 4); // 4데미지당 1레벨, 최대 4레벨
-                    hurtEntity.runCommand(`effect @s instant_health 1 ${healLevel} true`);
-                    
-                    // 회피 성공 메시지
-                    hurtEntity.runCommand(`tellraw @s {"rawtext":[{"text":"§b${attacker.typeId.split(":")[1]}의 ${damage}데미지 공격을 회피했습니다! (회복 레벨: ${healLevel + 1})"}]}`);
-                    
+
+                    try {
+                        const effectResult = hurtEntity.runCommand(`effect "${hurtEntity.name}" instant_health 1 ${healLevel} true`);
+                        if (effectResult.successCount === 0) {
+                            console.warn(`회복 효과 적용 실패: ${hurtEntity.name}`);
+                        }
+                    } catch (effectError) {
+                        console.warn("회복 효과 적용 오류:", effectError);
+                    }
+
+                    // 회피 성공 메시지 (sendMessage 사용)
+                    hurtEntity.sendMessage(`§b${attacker.typeId.split(":")[1]}의 ${damage}데미지 공격을 회피했습니다! (회복 레벨: ${healLevel + 1})`);
+
                     // 회피 성공 파티클 효과
-                    hurtEntity.runCommand(`particle minecraft:enchanted_hit_particle ~~~`);
+                    try {
+                        const particleResult = hurtEntity.runCommand(`particle minecraft:enchanted_hit_particle ~~~`);
+                        if (particleResult.successCount === 0) {
+                            console.warn("파티클 효과 표시 실패");
+                        }
+                    } catch (particleError) {
+                        console.warn("파티클 효과 표시 실패:", particleError);
+                    }
                 } else {
                     // 회피 실패
-                    hurtEntity.runCommand(`tellraw @s {"rawtext":[{"text":"§c${attacker.typeId.split(":")[1]}의 ${damage}데미지 공격을 회피하지 못했습니다!"}]}`);
-                    
+                    hurtEntity.sendMessage(`§c${attacker.typeId.split(":")[1]}의 ${damage}데미지 공격을 회피하지 못했습니다!`);
+
                     // 회피 실패 파티클 효과
-                    hurtEntity.runCommand(`particle minecraft:villager_angry ~~~`);
+                    try {
+                        const particleResult = hurtEntity.runCommand(`particle minecraft:villager_angry ~~~`);
+                        if (particleResult.successCount === 0) {
+                            console.warn("파티클 효과 표시 실패");
+                        }
+                    } catch (particleError) {
+                        console.warn("파티클 효과 표시 실패:", particleError);
+                    }
                 }
 
                 // 마지막 회피 시도 시간 업데이트

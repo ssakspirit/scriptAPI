@@ -64,7 +64,7 @@ function showWarpUI(player) {
     const cooldownEnd = playerCooldowns.get(player.name);
     if (cooldownEnd && Date.now() < cooldownEnd) {
         const remainingTime = Math.ceil((cooldownEnd - Date.now()) / 1000);
-        player.runCommandAsync(`playsound block.anvil.use @s ~ ~ ~ 1 1`);
+        player.runCommand(`playsound block.anvil.use @s ~ ~ ~ 1 1`);
         player.sendMessage(`§c쿨타임이 ${remainingTime}초 남았습니다.`);
         return;
     }

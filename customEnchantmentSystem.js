@@ -81,7 +81,7 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  *         1) lore에서 인챈트 확인: line.includes(CUSTOM_ENCHANTS.새로운_인챈트.id)
  *         2) 레벨 파싱: parseInt(line.split("_").pop())
  *         3) 쿨타임 체크: if (!isOnCooldown(player, "새로운_인챈트"))
- *         4) 효과 구현: player.runCommandAsync() 등으로 효과 적용
+ *         4) 효과 구현: player.runCommand() 등으로 효과 적용
  *         5) 쿨타임 시작: startCooldown(player, "새로운_인챈트")
  *         6) 이벤트 취소: shouldCancelEvent = true
  * 
@@ -91,14 +91,14 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  * 
  * [ 효과 구현 예시 ]
  * 1. 명령어로 효과 구현
- *    - 효과 부여: player.runCommandAsync(`effect @s 효과_ID 지속시간 레벨 true`);
- *    - 엔티티 소환: player.runCommandAsync(`summon 엔티티_ID ~ ~ ~`);
- *    - 블록 변경: player.runCommandAsync(`fill ~-범위 ~-범위 ~-범위 ~범위 ~범위 ~범위 블록_ID`);
- *    - 엔티티 이동: player.runCommandAsync(`tp @e[type=타입,r=범위] x y z`);
+ *    - 효과 부여: player.runCommand(`effect @s 효과_ID 지속시간 레벨 true`);
+ *    - 엔티티 소환: player.runCommand(`summon 엔티티_ID ~ ~ ~`);
+ *    - 블록 변경: player.runCommand(`fill ~-범위 ~-범위 ~-범위 ~범위 ~범위 ~범위 블록_ID`);
+ *    - 엔티티 이동: player.runCommand(`tp @e[type=타입,r=범위] x y z`);
  * 
  * 2. API로 효과 구현
  *    - 폭발: player.dimension.createExplosion(위치, 범위, 옵션);
- *    - 파티클: player.runCommandAsync(`particle 파티클_ID ~ ~ ~`);
+ *    - 파티클: player.runCommand(`particle 파티클_ID ~ ~ ~`);
  *    - 시선 방향: player.getViewDirection()
  *    - 넉백: player.applyKnockback(x, z, 수평강도, 수직강도)
  * 
@@ -590,7 +590,7 @@ function applyEnchant(player, item, enchant, level, slot) {
 
         if (random > successChance) {
             // 실패
-            player.runCommandAsync(`clear @s emerald 0 ${cost}`);
+            player.runCommand(`clear @s emerald 0 ${cost}`);
 
             if (random < ENCHANT_CONFIG.BREAK_CHANCE) {
                 // 아이템 파괴
@@ -611,7 +611,7 @@ function applyEnchant(player, item, enchant, level, slot) {
             }
 
             // 에메랄드 차감
-            player.runCommandAsync(`clear @s emerald 0 ${cost}`);
+            player.runCommand(`clear @s emerald 0 ${cost}`);
 
             // 기존 로어 가져오기
             const existingLore = currentItem.getLore() || [];
@@ -676,12 +676,12 @@ world.beforeEvents.itemUse.subscribe((event) => {
             if (dimensionLine) {
                 if (!isOnCooldown(player, "FOURTH_DIMENSION")) {
                     // 반경 2블록 내의 모든 엔티티 즉사
-                    player.runCommandAsync(`damage @e[r=2,type=!player] 999999 void`);
-                    player.runCommandAsync(`damage @a[r=2,name=!${player.name}] 999999 void`);
+                    player.runCommand(`damage @e[r=2,type=!player] 999999 void`);
+                    player.runCommand(`damage @a[r=2,name=!${player.name}] 999999 void`);
                     
                     // 효과음 및 파티클
-                    player.runCommandAsync(`playsound mob.wither.break_block @a ~~~ 1 0.5`);
-                    player.runCommandAsync(`particle minecraft:huge_explosion_emitter ~~~`);
+                    player.runCommand(`playsound mob.wither.break_block @a ~~~ 1 0.5`);
+                    player.runCommand(`particle minecraft:huge_explosion_emitter ~~~`);
                     
                     // 메시지
                     player.sendMessage("§b4차원 공간이 열렸습니다!");
@@ -711,7 +711,7 @@ world.beforeEvents.itemUse.subscribe((event) => {
                 };
 
                 // 번개 소환 및 폭발 (레벨에 따라 강화, 폭발 범위 감소)
-                player.runCommandAsync(`summon lightning_bolt ${targetPos.x} ${targetPos.y} ${targetPos.z}`);
+                player.runCommand(`summon lightning_bolt ${targetPos.x} ${targetPos.y} ${targetPos.z}`);
                 system.runTimeout(() => {
                     player.dimension.createExplosion(targetPos, 0.5 + (level * 0.5), {
                         breaksBlocks: false,
@@ -732,7 +732,7 @@ world.beforeEvents.itemUse.subscribe((event) => {
             // 쿨타임 체크
             if (!isOnCooldown(player, "ICE_ASPECT")) {
                 // 주변 몹들에게 슬로우 효과 (레벨에 따라 강화)
-                player.runCommandAsync(`effect @e[type=!player,r=10] slowness ${5 + level * 2} ${level} true`);
+                player.runCommand(`effect @e[type=!player,r=10] slowness ${5 + level * 2} ${level} true`);
 
                 // 플레이어의 시선 방향으로 눈덩이 소환
                 const viewDirection = player.getViewDirection();
@@ -758,7 +758,7 @@ world.beforeEvents.itemUse.subscribe((event) => {
                         y: basePos.y,
                         z: basePos.z + offset.z
                     };
-                    player.runCommandAsync(`summon snowball ${pos.x.toFixed(1)} ${pos.y.toFixed(1)} ${pos.z.toFixed(1)}`);
+                    player.runCommand(`summon snowball ${pos.x.toFixed(1)} ${pos.y.toFixed(1)} ${pos.z.toFixed(1)}`);
                 });
 
                 startCooldown(player, "ICE_ASPECT");
@@ -775,12 +775,12 @@ world.beforeEvents.itemUse.subscribe((event) => {
             const radius = 2 + level;
 
             // 주변의 물 블록을 얼음으로 변환
-            player.runCommandAsync(`fill ~-${radius} ~-1 ~-${radius} ~${radius} ~1 ~${radius} minecraft:ice [] replace minecraft:water`);
-            player.runCommandAsync(`fill ~-${radius} ~-1 ~-${radius} ~${radius} ~1 ~${radius} minecraft:ice [] replace minecraft:flowing_water`);
+            player.runCommand(`fill ~-${radius} ~-1 ~-${radius} ~${radius} ~1 ~${radius} minecraft:ice [] replace minecraft:water`);
+            player.runCommand(`fill ~-${radius} ~-1 ~-${radius} ~${radius} ~1 ~${radius} minecraft:ice [] replace minecraft:flowing_water`);
 
             // 파티클 효과 추가 (플레이어 위치에 눈꽃 파티클)
             for (let i = 0; i < 20; i++) {
-                player.runCommandAsync(`particle minecraft:snowflake_particle ~ ~ ~`);
+                player.runCommand(`particle minecraft:snowflake_particle ~ ~ ~`);
             }
 
             shouldCancelEvent = true;
@@ -797,13 +797,13 @@ world.beforeEvents.itemUse.subscribe((event) => {
                 const radius = 3 + (level * 2);
 
                 // 주변 엔티티를 양으로 변환 (플레이어 제외)
-                player.runCommandAsync(`execute as @e[type=!player,type=!sheep,r=${radius}] at @s run summon sheep ~ ~ ~`);
-                player.runCommandAsync(`execute as @e[type=!player,type=!sheep,r=${radius}] at @s run particle minecraft:heart_particle ~ ~1 ~`);
-                player.runCommandAsync(`kill @e[type=!player,type=!sheep,r=${radius}]`);
+                player.runCommand(`execute as @e[type=!player,type=!sheep,r=${radius}] at @s run summon sheep ~ ~ ~`);
+                player.runCommand(`execute as @e[type=!player,type=!sheep,r=${radius}] at @s run particle minecraft:heart_particle ~ ~1 ~`);
+                player.runCommand(`kill @e[type=!player,type=!sheep,r=${radius}]`);
 
                 // 파티클 효과
                 for (let i = 0; i < 30; i++) {
-                    player.runCommandAsync(`particle minecraft:heart_particle ~ ~1 ~`);
+                    player.runCommand(`particle minecraft:heart_particle ~ ~1 ~`);
                 }
 
                 startCooldown(player, "SHEPHERDS_RAGE");
@@ -1004,16 +1004,16 @@ world.beforeEvents.itemUse.subscribe((event) => {
                         const targetZ = loc.z + (viewDirection.z * 2);
                         
                         // 주변 몹들을 플레이어 앞으로 끌어당기기
-                        player.runCommandAsync(`tp @e[type=!player,type=!item,r=10,name=!${player.name}] ${targetX} ${loc.y} ${targetZ}`);
+                        player.runCommand(`tp @e[type=!player,type=!item,r=10,name=!${player.name}] ${targetX} ${loc.y} ${targetZ}`);
                         
                         // 플레이어를 위로 점프시키기
                         player.applyKnockback(0, 0, 0, jumpHeight * 0.2);
                         
                         // 파티클 효과
-                        player.runCommandAsync(`particle minecraft:dragon_breath_trail ~ ~ ~`);
+                        player.runCommand(`particle minecraft:dragon_breath_trail ~ ~ ~`);
                         
                         // 사운드 효과
-                        player.runCommandAsync(`playsound item.trident.return @a ~ ~ ~ 1 0.5`);
+                        player.runCommand(`playsound item.trident.return @a ~ ~ ~ 1 0.5`);
 
                         // 쿨타임 설정 (9초)
                         startCooldown(player, 'REVERSE_JUMP');
@@ -1057,19 +1057,19 @@ world.beforeEvents.itemUse.subscribe((event) => {
                             const perpZ = viewDirection.x;
                             
                             // 중심선에 파티클 생성
-                            player.dimension.runCommandAsync(`particle minecraft:basic_flame_particle ${baseX} ${playerLoc.y + 1} ${baseZ}`);
+                            player.dimension.runCommand(`particle minecraft:basic_flame_particle ${baseX} ${playerLoc.y + 1} ${baseZ}`);
                             
                             // 양쪽에 파티클 생성
                             for (let w = 1; w <= width; w++) {
                                 // 왼쪽
                                 const leftX = baseX + (perpX * w);
                                 const leftZ = baseZ + (perpZ * w);
-                                player.dimension.runCommandAsync(`particle minecraft:basic_flame_particle ${leftX} ${playerLoc.y + 1} ${leftZ}`);
+                                player.dimension.runCommand(`particle minecraft:basic_flame_particle ${leftX} ${playerLoc.y + 1} ${leftZ}`);
                                 
                                 // 오른쪽
                                 const rightX = baseX - (perpX * w);
                                 const rightZ = baseZ - (perpZ * w);
-                                player.dimension.runCommandAsync(`particle minecraft:basic_flame_particle ${rightX} ${playerLoc.y + 1} ${rightZ}`);
+                                player.dimension.runCommand(`particle minecraft:basic_flame_particle ${rightX} ${playerLoc.y + 1} ${rightZ}`);
                             }
                         }
                         
@@ -1114,14 +1114,14 @@ world.beforeEvents.itemUse.subscribe((event) => {
                                 
                                 // 넉백된 엔티티에 파티클
                                 const eLoc = entity.location;
-                                player.dimension.runCommandAsync(`particle minecraft:basic_crit ${eLoc.x} ${eLoc.y + 1} ${eLoc.z}`);
+                                player.dimension.runCommand(`particle minecraft:basic_crit ${eLoc.x} ${eLoc.y + 1} ${eLoc.z}`);
                             } catch (error) {
                                 continue;
                             }
                         }
                         
                         // 사운드 효과
-                        player.dimension.runCommandAsync(`playsound mob.warden.sonic_boom @a ${playerLoc.x} ${playerLoc.y} ${playerLoc.z} 0.7 1.2`);
+                        player.dimension.runCommand(`playsound mob.warden.sonic_boom @a ${playerLoc.x} ${playerLoc.y} ${playerLoc.z} 0.7 1.2`);
                     });
                     shouldCancelEvent = true;
                 }
@@ -1152,7 +1152,7 @@ system.runInterval(() => {
                 // 아늑함 효과
                 if (lore.some(line => line.includes(CUSTOM_ENCHANTS.COZY.id))) {
                     const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.COZY.id)).split("_").pop());
-                    player.runCommandAsync(`effect @s regeneration 30 ${level - 1} true`);
+                    player.runCommand(`effect @s regeneration 30 ${level - 1} true`);
                 }
             }
 
@@ -1162,12 +1162,12 @@ system.runInterval(() => {
                 // 신속의 부츠 효과
                 if (lore.some(line => line.includes(CUSTOM_ENCHANTS.SPEED_BOOST.id))) {
                     const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.SPEED_BOOST.id)).split("_").pop());
-                    player.runCommandAsync(`effect @s speed 30 ${level - 1} true`);
+                    player.runCommand(`effect @s speed 30 ${level - 1} true`);
                 }
                 // 도약의 부츠 효과
                 if (lore.some(line => line.includes(CUSTOM_ENCHANTS.JUMP_BOOST.id))) {
                     const level = parseInt(lore.find(line => line.includes(CUSTOM_ENCHANTS.JUMP_BOOST.id)).split("_").pop());
-                    player.runCommandAsync(`effect @s jump_boost 30 ${level - 1} true`);
+                    player.runCommand(`effect @s jump_boost 30 ${level - 1} true`);
                 }
             }
         }
@@ -1377,13 +1377,13 @@ world.afterEvents.entityHurt.subscribe((event) => {
                                     const duration = 3 + level;  // 기본 3초 + 레벨당 1초
                                     
                                     // 버프 효과
-                                    hurtEntity.runCommandAsync(`effect @s resistance ${duration} ${resistanceLevel - 1} true`);
-                                    hurtEntity.runCommandAsync(`effect @s speed ${duration} ${speedLevel - 1} true`);
+                                    hurtEntity.runCommand(`effect @s resistance ${duration} ${resistanceLevel - 1} true`);
+                                    hurtEntity.runCommand(`effect @s speed ${duration} ${speedLevel - 1} true`);
                                     
                                     // 시각 및 청각 효과
-                                    hurtEntity.runCommandAsync(`particle minecraft:huge_explosion_emitter ~~~`);
-                                    hurtEntity.runCommandAsync(`playsound random.explode @a[r=10] ~~~ 1 1 1`);
-                                    hurtEntity.runCommandAsync(`title @s actionbar §c§l! 생존 본능 발동 !`);
+                                    hurtEntity.runCommand(`particle minecraft:huge_explosion_emitter ~~~`);
+                                    hurtEntity.runCommand(`playsound random.explode @a[r=10] ~~~ 1 1 1`);
+                                    hurtEntity.runCommand(`title @s actionbar §c§l! 생존 본능 발동 !`);
                                     
                                     // 쿨타임 시작
                                     startCooldown(hurtEntity, 'SURVIVAL_INSTINCT');
@@ -1432,22 +1432,22 @@ world.afterEvents.entityHurt.subscribe((event) => {
                             // 회피 성공
                             // 데미지에 비례하여 회복 효과 레벨 계산 (데미지의 1/6, 최대 레벨 2)
                             const healLevel = Math.min(Math.floor(damage / 6), 2);
-                            hurtEntity.runCommandAsync(`effect @s instant_health 1 ${healLevel} true`);
+                            hurtEntity.runCommand(`effect @s instant_health 1 ${healLevel} true`);
                             
                             // 회피 성공 메시지 (데미지를 소수점 첫째자리까지 표시)
-                            hurtEntity.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§b${attacker.typeId.split(":")[1]}의 ${damage.toFixed(1)}데미지 공격을 회피했습니다!"}]}`);
+                            hurtEntity.runCommand(`tellraw @s {"rawtext":[{"text":"§b${attacker.typeId.split(":")[1]}의 ${damage.toFixed(1)}데미지 공격을 회피했습니다!"}]}`);
                             
                             // 회피 성공 파티클 효과
-                            hurtEntity.runCommandAsync(`particle minecraft:enchanted_hit_particle ~~~`);
+                            hurtEntity.runCommand(`particle minecraft:enchanted_hit_particle ~~~`);
                             
                             // 데미지 무효화
                             event.cancel = true;
                         } else {
                             // 회피 실패 메시지 (데미지를 소수점 첫째자리까지 표시)
-                            hurtEntity.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§c${attacker.typeId.split(":")[1]}의 ${damage.toFixed(1)}데미지 공격을 회피하지 못했습니다!"}]}`);
+                            hurtEntity.runCommand(`tellraw @s {"rawtext":[{"text":"§c${attacker.typeId.split(":")[1]}의 ${damage.toFixed(1)}데미지 공격을 회피하지 못했습니다!"}]}`);
                             
                             // 회피 실패 파티클 효과
-                            hurtEntity.runCommandAsync(`particle minecraft:villager_angry ~~~`);
+                            hurtEntity.runCommand(`particle minecraft:villager_angry ~~~`);
                         }
 
                         // 마지막 회피 시도 시간 업데이트
@@ -1480,13 +1480,13 @@ system.runInterval(() => {
                 if (lore.some(line => line.includes(CUSTOM_ENCHANTS.TITANIUM_SHIELD.id))) {
                     if (!shieldUsers.has(player.id)) {
                         // 효과음 및 파티클
-                        player.runCommandAsync(`playsound item.shield.block @a ~~~ 1 1`);
-                        player.runCommandAsync(`particle minecraft:villager_happy ~~~`);
-                        player.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§b티타늄 도배의 방어 태세가 시작되었습니다!"}]}`);
+                        player.runCommand(`playsound item.shield.block @a ~~~ 1 1`);
+                        player.runCommand(`particle minecraft:villager_happy ~~~`);
+                        player.runCommand(`tellraw @s {"rawtext":[{"text":"§b티타늄 도배의 방어 태세가 시작되었습니다!"}]}`);
 
                         // 무적 처리 + 구속
-                        player.runCommandAsync(`effect @s absorption 255 3 true`);
-                        player.runCommandAsync(`effect @s slowness 255 3 true`);
+                        player.runCommand(`effect @s absorption 255 3 true`);
+                        player.runCommand(`effect @s slowness 255 3 true`);
 
                         // 방어 시작 시간 기록
                         shieldUsers.set(player.id, Date.now());
@@ -1494,7 +1494,7 @@ system.runInterval(() => {
                         // 3초마다 파티클 효과
                         const lastTime = shieldUsers.get(player.id);
                         if (Date.now() - lastTime >= 3000) {
-                            player.runCommandAsync(`particle minecraft:villager_happy ~~~`);
+                            player.runCommand(`particle minecraft:villager_happy ~~~`);
                             shieldUsers.set(player.id, Date.now());
                         }
                     }
@@ -1502,12 +1502,12 @@ system.runInterval(() => {
             } else {
                 // 방어 자세를 풀었을 때
                 if (shieldUsers.has(player.id)) {
-                    player.runCommandAsync(`playsound item.shield.block @a ~~~ 1 0.5`);
-                    player.runCommandAsync(`tellraw @s {"rawtext":[{"text":"§7티타늄 도배의 방어 태세가 해제되었습니다."}]}`);
+                    player.runCommand(`playsound item.shield.block @a ~~~ 1 0.5`);
+                    player.runCommand(`tellraw @s {"rawtext":[{"text":"§7티타늄 도배의 방어 태세가 해제되었습니다."}]}`);
 
                     // 효과 제거
-                    player.runCommandAsync(`effect @s absorption 0`);
-                    player.runCommandAsync(`effect @s slowness 0`);
+                    player.runCommand(`effect @s absorption 0`);
+                    player.runCommand(`effect @s slowness 0`);
 
                     shieldUsers.delete(player.id);
                 }
@@ -1539,11 +1539,11 @@ world.beforeEvents.playerBreakBlock.subscribe((event) => {
             const z = Math.floor(block.location.z);
             
             // 3x3x3 범위의 블록을 한번에 파괴
-            player.runCommandAsync(`fill ${x-1} ${y-1} ${z-1} ${x+1} ${y+1} ${z+1} air destroy`);
+            player.runCommand(`fill ${x-1} ${y-1} ${z-1} ${x+1} ${y+1} ${z+1} air destroy`);
             
             // 효과음 및 파티클
-            player.runCommandAsync(`playsound random.explode @a ~~~ 1 0.8`);
-            player.runCommandAsync(`particle minecraft:huge_explosion_emitter ${x} ${y} ${z}`);
+            player.runCommand(`playsound random.explode @a ~~~ 1 0.8`);
+            player.runCommand(`particle minecraft:huge_explosion_emitter ${x} ${y} ${z}`);
         }
     } catch (error) {
         console.warn("거대함 처리 중 오류:", error);

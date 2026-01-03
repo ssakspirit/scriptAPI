@@ -241,7 +241,7 @@ async function enhanceItem(item, currentLevel = 0, player) {
         }
 
         if (currentLevel >= 4) {
-            await player.runCommandAsync(`playsound mob.villager.no @s ~ ~ ~ 1 1`);
+            player.runCommand(`playsound mob.villager.no @s ~ ~ ~ 1 1`);
             return { 
                 success: false, 
                 message: "§c이미 최대로 강화되었습니다." 
@@ -261,7 +261,7 @@ async function enhanceItem(item, currentLevel = 0, player) {
         }
 
         if (!hasCostItem) {
-            await player.runCommandAsync(`playsound mob.villager.no @s ~ ~ ~ 1 1`);
+            player.runCommand(`playsound mob.villager.no @s ~ ~ ~ 1 1`);
             return { 
                 success: false, 
                 message: `§c강화에 필요한 ${ENHANCEMENT_COST.displayName}가 부족합니다. (필요: ${ENHANCEMENT_COST.count}개)` 
@@ -273,10 +273,10 @@ async function enhanceItem(item, currentLevel = 0, player) {
 
         if (randomValue > successChance) {
             // 실패 시 아이템 제거
-            await player.runCommandAsync(`clear @s ${ENHANCEMENT_COST.item} 0 ${ENHANCEMENT_COST.count}`);
-            await player.runCommandAsync(`clear @s ${item.typeId} 0 1`);
-            await player.runCommandAsync(`playsound random.break @s ~ ~ ~ 1 1`);
-            await player.runCommandAsync(`playsound mob.wither.death @s ~ ~ ~ 0.5 0.5`);
+            player.runCommand(`clear @s ${ENHANCEMENT_COST.item} 0 ${ENHANCEMENT_COST.count}`);
+            player.runCommand(`clear @s ${item.typeId} 0 1`);
+            player.runCommand(`playsound random.break @s ~ ~ ~ 1 1`);
+            player.runCommand(`playsound mob.wither.death @s ~ ~ ~ 0.5 0.5`);
             return {
                 success: false,
                 message: `§c강화 실패! 아이템이 파괴되었습니다. (성공확률: ${successChance}%)`
@@ -288,11 +288,11 @@ async function enhanceItem(item, currentLevel = 0, player) {
             const itemConfig = ENHANCEABLE_ITEMS[item.typeId];
             const enchantments = itemConfig.enchantments[nextLevel];
 
-            await player.runCommandAsync(`clear @s ${ENHANCEMENT_COST.item} 0 ${ENHANCEMENT_COST.count}`);
+            player.runCommand(`clear @s ${ENHANCEMENT_COST.item} 0 ${ENHANCEMENT_COST.count}`);
 
             // 인챈트 적용
             for (const [enchantType, level] of Object.entries(enchantments)) {
-                await player.runCommandAsync(`enchant @s ${enchantType} ${level}`);
+                player.runCommand(`enchant @s ${enchantType} ${level}`);
             }
 
             // 아이템 이름 업데이트
@@ -310,8 +310,8 @@ async function enhanceItem(item, currentLevel = 0, player) {
                 console.warn("아이템 이름 설정 중 오류 발생:", error);
             }
             
-            await player.runCommandAsync(`playsound random.levelup @s ~ ~ ~ 1 1`);
-            await player.runCommandAsync(`playsound random.orb @s ~ ~ ~ 1 1`);
+            player.runCommand(`playsound random.levelup @s ~ ~ ~ 1 1`);
+            player.runCommand(`playsound random.orb @s ~ ~ ~ 1 1`);
             
             return { 
                 success: true, 
@@ -351,8 +351,8 @@ world.afterEvents.itemUse.subscribe((event) => {
             
             // 4단계인 경우 더 이상 강화 불가
             if (currentLevel >= 4) {
-                player.runCommandAsync(`playsound note.bass @s ~ ~ ~ 1 0.5`);  // 낮은 음의 효과음
-                player.runCommandAsync(`playsound mob.villager.no @s ~ ~ ~ 1 1`);  // 실패 효과음
+                player.runCommand(`playsound note.bass @s ~ ~ ~ 1 0.5`);  // 낮은 음의 효과음
+                player.runCommand(`playsound mob.villager.no @s ~ ~ ~ 1 1`);  // 실패 효과음
                 player.sendMessage("§c이미 최대 강화 단계입니다.");
                 lastClickTimes.delete(player.id);
                 return;
@@ -409,8 +409,8 @@ world.beforeEvents.chatSend.subscribe((event) => {
             
             // 4단계인 경우 더 이상 강화 불가
             if (currentLevel >= 4) {
-                player.runCommandAsync(`playsound note.bass @s ~ ~ ~ 1 0.5`);  // 낮은 음의 효과음
-                player.runCommandAsync(`playsound mob.villager.no @s ~ ~ ~ 1 1`);  // 실패 효과음
+                player.runCommand(`playsound note.bass @s ~ ~ ~ 1 0.5`);  // 낮은 음의 효과음
+                player.runCommand(`playsound mob.villager.no @s ~ ~ ~ 1 1`);  // 실패 효과음
                 player.sendMessage("§c이미 최대 강화 단계입니다.");
                 return;
             }

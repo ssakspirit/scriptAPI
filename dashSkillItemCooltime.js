@@ -114,7 +114,8 @@ system.runInterval(() => {
 // 파티클 생성 함수
 function createParticles(player) {
     const pos = player.location;
-    player.runCommandAsync(`particle ${DASH_SETTINGS.particleType} ${pos.x} ${pos.y} ${pos.z}`);
+    const dimension = player.dimension;
+    dimension.spawnParticle(DASH_SETTINGS.particleType, pos);
 }
 
 // 대쉬 스킬 사용 이벤트
@@ -134,22 +135,31 @@ world.beforeEvents.itemUse.subscribe(e => {
                 return;
             }
 
-            // 대쉬 실행
+            // 대쉬 실행 - VectorXZ 객체와 수직 강도 전달
+            // 보는 방향에 forwardPower를 곱하여 수평 방향 벡터 생성
+            const horizontalForce = {
+                x: direction.x * DASH_SETTINGS.forwardPower,
+                z: direction.z * DASH_SETTINGS.forwardPower
+            };
+
             player.applyKnockback(
-                direction.x,
-                direction.z,
-                DASH_SETTINGS.forwardPower,
-                DASH_SETTINGS.upwardPower
+                horizontalForce,              // VectorXZ: 수평 방향 벡터
+                DASH_SETTINGS.upwardPower     // number: 수직 강도
             );
 
             // 파티클 효과 시작
             let tickCount = 0;
             const particleInterval = system.runInterval(() => {
-                createParticles(player);
-                tickCount++;
+                try {
+                    createParticles(player);
+                    tickCount++;
 
-                // 지정된 시간이 지나면 인터벌 중지
-                if (tickCount >= DASH_SETTINGS.particleDuration) {
+                    // 지정된 시간이 지나면 인터벌 중지
+                    if (tickCount >= DASH_SETTINGS.particleDuration) {
+                        system.clearRun(particleInterval);
+                    }
+                } catch (error) {
+                    console.warn("파티클 생성 중 오류:", error);
                     system.clearRun(particleInterval);
                 }
             }, 1);

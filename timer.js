@@ -50,7 +50,7 @@ world.afterEvents.chatSend.subscribe((event) => {
 
         sec = messageToSave; 
         console.log(`${sec}초 카운트다운 시작`); 
-        world.getDimension("overworld").runCommandAsync(`title @a title ${sec}초 카운트다운 시작`); 
+        world.getDimension("overworld").runCommand(`title @a title ${sec}초 카운트다운 시작`); 
         countingIs = true; 
     } 
 
@@ -67,11 +67,11 @@ function printStoredMessage() {
     try {
         if (countingIs && sec > 0) {
             sec--;
-            world.getDimension("overworld").runCommandAsync(`title @a actionbar 남은 시간: ${sec}초`);
+            world.getDimension("overworld").runCommand(`title @a actionbar 남은 시간: ${sec}초`);
         } else if (sec === 0 && countingIs) {
             countingIs = false;
-            world.getDimension("overworld").runCommandAsync(`title @a actionbar 남은 시간: ${sec}초`);
-            world.getDimension("overworld").runCommandAsync(`title @a title 시간 종료`);
+            world.getDimension("overworld").runCommand(`title @a actionbar 남은 시간: ${sec}초`);
+            world.getDimension("overworld").runCommand(`title @a title 시간 종료`);
         }
     } catch (error) {
         console.warn("타이머 업데이트 중 오류:", error);

@@ -56,9 +56,10 @@ world.beforeEvents.chatSend.subscribe((event) => {
         const dimension = world.getDimension("overworld");
 
         // 묘비 제거 및 플레이어 부활
-        dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run tp ${targetName} ~ ~ ~`).then(() => {
-            dimension.runCommandAsync(`kill @e[type=armor_stand,name="${graveName}"]`);
-            targetPlayer.runCommandAsync("gamemode survival @s");
+        try {
+            dimension.runCommand(`execute as @e[type=armor_stand,name="${graveName}"] at @s run tp ${targetName} ~ ~ ~`);
+            dimension.runCommand(`kill @e[type=armor_stand,name="${graveName}"]`);
+            targetPlayer.runCommand("gamemode survival @s");
             targetPlayer.nameTag = targetPlayer.name;
             targetPlayer.sendMessage("§a관리자에 의해 부활되었습니다!");
 
@@ -84,9 +85,9 @@ world.beforeEvents.chatSend.subscribe((event) => {
                 system.clearRun(autoRespawnMap.get(targetName));
                 autoRespawnMap.delete(targetName);
             }
-        }).catch(() => {
+        } catch (error) {
             player.sendMessage(`§c${targetName}님의 묘비를 찾을 수 없습니다!`);
-        });
+        }
     }
 });
 
@@ -97,7 +98,7 @@ world.afterEvents.entityDie.subscribe((event) => {
     // 사망한 엔티티가 플레이어인지 확인
     if (entity.typeId === "minecraft:player") {
         // 관전자 모드로 변경
-        entity.runCommandAsync("gamemode spectator @s");
+        entity.runCommand("gamemode spectator @s");
 
         // 사망한 플레이어의 이름 위에 표시
         entity.nameTag = "§c☠ §f" + entity.name + " §c☠";
@@ -105,7 +106,7 @@ world.afterEvents.entityDie.subscribe((event) => {
         // 모든 플레이어에게 사망 메시지 표시
         world.getAllPlayers().forEach(player => {
             player.sendMessage(`§c${entity.name}님이 사망하셨습니다!`);
-            player.runCommandAsync(`title @s actionbar §c${entity.name}님이 사망하셨습니다!`);
+            player.runCommand(`title @s actionbar §c${entity.name}님이 사망하셨습니다!`);
         });
 
         // 사망한 플레이어에게 메시지
@@ -118,7 +119,7 @@ world.afterEvents.entityDie.subscribe((event) => {
         const graveName = `§8† §7${playerName}의 묘비 §8†`;
 
         // 묘비로 사용할 아머스탠드 소환
-        entity.runCommandAsync(`summon armor_stand "${graveName}" ${location.x} ${location.y} ${location.z}`);
+        entity.runCommand(`summon armor_stand "${graveName}" ${location.x} ${location.y} ${location.z}`);
 
         // 아머스탠드와 플레이어 매핑 저장
         const armorStandCheck = system.runInterval(() => {
@@ -144,7 +145,7 @@ world.afterEvents.entityDie.subscribe((event) => {
                     onlinePlayer.teleport(lastLocation);
 
                     // 플레이어 권한 변경
-                    onlinePlayer.runCommandAsync("gamemode survival @s");
+                    onlinePlayer.runCommand("gamemode survival @s");
                     // 이름태그 원래대로
                     onlinePlayer.nameTag = playerName;
                     onlinePlayer.sendMessage("§a묘비가 파괴되어 다시 전투에 참여할 수 있습니다!");
@@ -197,13 +198,13 @@ world.afterEvents.entityDie.subscribe((event) => {
                 }
 
                 // 파티클 효과 적용
-                onlinePlayer.runCommandAsync(`execute at @s run particle minecraft:villager_angry ~ ~2 ~`).catch(() => { });
-                onlinePlayer.runCommandAsync(`execute at @s run particle minecraft:dragon_breath_trail ~ ~1 ~`).catch(() => { });
+                onlinePlayer.runCommand(`execute at @s run particle minecraft:villager_angry ~ ~2 ~`)
+                onlinePlayer.runCommand(`execute at @s run particle minecraft:dragon_breath_trail ~ ~1 ~`)
 
                 // 묘비 주변에 여러 파티클 효과
                 const dimension = world.getDimension("overworld");
-                dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:endrod ~ ~0.5 ~`).catch(() => { });
-                dimension.runCommandAsync(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:basic_smoke_particle ~ ~0.3 ~`).catch(() => { });
+                dimension.runCommand(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:endrod ~ ~0.5 ~`)
+                dimension.runCommand(`execute as @e[type=armor_stand,name="${graveName}"] at @s run particle minecraft:basic_smoke_particle ~ ~0.3 ~`)
             } catch (error) {
                 // 오류 발생 시 인터벌 정리
                 system.clearRun(particleInterval);
@@ -227,10 +228,10 @@ world.afterEvents.entityDie.subscribe((event) => {
 
                 // 묘비 제거
                 const dimension = world.getDimension("overworld");
-                dimension.runCommandAsync(`kill @e[type=armor_stand,name="${graveName}"]`);
+                dimension.runCommand(`kill @e[type=armor_stand,name="${graveName}"]`);
 
                 // 플레이어 부활
-                onlinePlayer.runCommandAsync("gamemode survival @s");
+                onlinePlayer.runCommand("gamemode survival @s");
                 onlinePlayer.nameTag = playerName;
                 onlinePlayer.sendMessage("§a10초가 지나 자동으로 부활되었습니다!");
 

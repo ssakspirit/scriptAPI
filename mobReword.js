@@ -99,16 +99,18 @@ function giveRewards(player, rewards) {
                     // 플레이어 위치 기준으로 명령어 실행
                     const dimension = player.dimension;
                     const pos = player.location;
-                    
-                    // 명령어에서 상대 좌표를 플레이어 위치로 변환
-                    const command = cmd.command
-                        .replace(/([~^])/g, (match, p1) => {
-                            if (p1 === '~') return Math.floor(pos.y);
-                            return p1;
-                        })
-                        .replace('@p', player.name);
 
-                    dimension.runCommand(command);
+                    // 명령어에서 @p를 플레이어 이름으로 변환
+                    const command = cmd.command.replace('@p', `"${player.name}"`);
+
+                    try {
+                        const result = dimension.runCommand(command);
+                        if (result.successCount === 0) {
+                            console.warn(`보상 명령어 실행 실패: ${command}`);
+                        }
+                    } catch (cmdError) {
+                        console.warn(`명령어 실행 중 오류 발생 (${cmd.command}):`, cmdError);
+                    }
                 } catch (error) {
                     console.warn(`명령어 실행 중 오류 발생 (${cmd.command}):`, error);
                 }

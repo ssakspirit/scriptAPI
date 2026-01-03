@@ -103,17 +103,35 @@ world.beforeEvents.playerInteractWithBlock.subscribe(e => {
                 
                 if (blockCommands) {
                     const pos = block.location;
+                    let commandsFailed = 0;
                     system.run(() => {
                         // 모든 명령어 실행
                         for (const cmd of blockCommands.commands) {
-                            world.getDimension("overworld").runCommand(
-                                cmd.replace(/[~]/g, (match) => {
-                                    return match === '~' ? pos.y : pos[match === '~' ? 'y' : match === '~x' ? 'x' : 'z'];
-                                })
-                            );
+                            try {
+                                // @p를 플레이어 이름으로 변환
+                                const processedCmd = cmd
+                                    .replace(/@p/g, `"${player.name}"`)
+                                    .replace(/~ ~1 ~/g, `${pos.x} ${pos.y + 1} ${pos.z}`)
+                                    .replace(/~ ~ ~/g, `${pos.x} ${pos.y} ${pos.z}`);
+
+                                const result = player.dimension.runCommand(processedCmd);
+
+                                if (result.successCount === 0) {
+                                    console.warn(`명령어 실행 실패: ${cmd}`);
+                                    commandsFailed++;
+                                }
+                            } catch (cmdError) {
+                                console.warn(`명령어 오류: ${cmd}`, cmdError);
+                                commandsFailed++;
+                            }
+                        }
+
+                        if (commandsFailed === 0) {
+                            player.sendMessage(blockCommands.message);
+                        } else {
+                            player.sendMessage(`§c일부 명령어 실행에 실패했습니다. (${commandsFailed}/${blockCommands.commands.length})`);
                         }
                     });
-                    player.sendMessage(blockCommands.message);
                 }
             }
         } catch (error) {

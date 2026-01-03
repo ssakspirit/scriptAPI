@@ -163,7 +163,7 @@ function setupScoreboard(player) {
         'scoreboard players set @a level 0'
     ];
     
-    commands.forEach(cmd => player.runCommandAsync(cmd));
+    commands.forEach(cmd => player.runCommand(cmd));
     player.sendMessage("스코어보드가 설정되었습니다. 'money'와 'level' 값이 0으로 초기화되었습니다.");
 }
 

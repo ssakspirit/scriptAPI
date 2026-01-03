@@ -108,8 +108,13 @@ function deposit(player, amount) {
 
         // 에메랄드가 충분하면 제거
         const dimension = world.getDimension("overworld");
-        dimension.runCommand(`clear "${player.name}" emerald ${amount}`);
-        
+        const clearResult = dimension.runCommand(`clear "${player.name}" emerald ${amount}`);
+
+        if (clearResult.successCount === 0) {
+            player.sendMessage("§c에메랄드 제거에 실패했습니다.");
+            return;
+        }
+
         // 제거 성공 시 잔액 증가
         accounts[player.name].balance += amount;
         saveBankAccounts(accounts);
@@ -135,9 +140,14 @@ function withdraw(player, amount) {
     }
 
     // 에메랄드 지급
-    world.getDimension("overworld").runCommand(
+    const giveResult = world.getDimension("overworld").runCommand(
         `give "${player.name}" emerald ${amount}`
     );
+
+    if (giveResult.successCount === 0) {
+        player.sendMessage("§c에메랄드 지급에 실패했습니다.");
+        return;
+    }
 
     accounts[player.name].balance -= amount;
     saveBankAccounts(accounts);

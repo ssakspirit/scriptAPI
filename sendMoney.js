@@ -31,8 +31,8 @@ const score_id = "money";
 
 // 일정 간격으로 플레이어의 스코어보드값을 약속
 system.runInterval(() => {
-    world.getDimension("overworld").runCommandAsync(`scoreboard objectives add ${score_id} dummy`);
-    world.getDimension("overworld").runCommandAsync(`scoreboard players add @a ${score_id} 0`);
+    world.getDimension("overworld").runCommand(`scoreboard objectives add ${score_id} dummy`);
+    world.getDimension("overworld").runCommand(`scoreboard players add @a ${score_id} 0`);
 }, 2)
 
 world.afterEvents.itemUse.subscribe((data) => {
@@ -88,9 +88,9 @@ export function send_money(player) {
             player.sendMessage(`보낼수있는 돈이 없습니다.`)
         } else {
             // 송금 처리: 송금자의 잔액에서 송금 금액을 빼고, 수취자의 잔액에 송금 금액을 추가
-            player.runCommandAsync(`scoreboard players remove @s ${score_id} ${money}`)
-            player.runCommandAsync(`scoreboard players add "${received_player}" ${score_id} ${money}`)
-            player.runCommandAsync(`tellraw "${received_player}" {"rawtext":[{"text":"${player.name}님이 ${money}원을 송금했습니다."}]}`)
+            player.runCommand(`scoreboard players remove @s ${score_id} ${money}`)
+            player.runCommand(`scoreboard players add "${received_player}" ${score_id} ${money}`)
+            player.runCommand(`tellraw "${received_player}" {"rawtext":[{"text":"${player.name}님이 ${money}원을 송금했습니다."}]}`)
             player.sendMessage(`${received_player}님에게 ${money}원을 보냈습니다.`)
         }
     })

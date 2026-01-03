@@ -92,8 +92,8 @@ export function chat_quest(player) {
                 if (player.hasTag(`chat_compensation`)) {
                     player.sendMessage(`이미 보상을 받았습니다.`)
                 } else {
-                    player.runCommandAsync(`give @s emerald 10`)
-                    player.runCommandAsync(`tag @s add chat_compensation`)
+                    player.runCommand(`give @s emerald 10`)
+                    player.runCommand(`tag @s add chat_compensation`)
                 }
             }
         }
@@ -118,8 +118,8 @@ export function hit_quest(player) {
                 if (player.hasTag(`hit_compensation`)) {
                     player.sendMessage(`이미 보상을 받았습니다.`)
                 } else {
-                    player.runCommandAsync(`give @s emerald 5`)
-                    player.runCommandAsync(`tag @s add hit_compensation`)
+                    player.runCommand(`give @s emerald 5`)
+                    player.runCommand(`tag @s add hit_compensation`)
                 }
             }
         }
@@ -129,7 +129,7 @@ export function hit_quest(player) {
 // 채팅 전송 이벤트를 구독하여 채팅 퀘스트 완료 처리
 world.afterEvents.chatSend.subscribe((data) => {
     if (!data.sender.hasTag(`chat`)) {
-        data.sender.runCommandAsync(`tag @s add chat`)
+        data.sender.runCommand(`tag @s add chat`)
         data.sender.sendMessage(`퀘스트 "채팅 치기" 완료!`)
     }
 })
@@ -140,7 +140,7 @@ world.afterEvents.entityHitEntity.subscribe((data) => {
     const hitentity = data.hitEntity
     if (hitentity.typeId == "minecraft:player") {
         if (!damagingentity.hasTag(`hit`)) {
-            damagingentity.runCommandAsync(`tag @s add hit`)
+            damagingentity.runCommand(`tag @s add hit`)
             damagingentity.sendMessage(`퀘스트 "플레이어 때리기" 완료!`)
         }
     }
