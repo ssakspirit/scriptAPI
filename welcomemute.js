@@ -18,7 +18,7 @@
  * 3. 월드에 비헤이비어 팩 적용
  * 
  * 관리자 명령어:
- * !resetplayer - 플레이어 접속 기록 초기화 (OP 권한 필요)
+ * !resetplayer - 플레이어 접속 기록 초기화 (op 또는 admin 태그 필요)
  * 
  * 채팅 제한 시스템 작동 방식:
  * 1. 신규 플레이어가 처음 접속하면 자동으로 3분간 채팅 제한
@@ -35,6 +35,14 @@
 import { world, system } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
+/**
+ * 운영자 권한 확인 헬퍼 함수
+ * player.isOp()와 PermissionLevel이 제거되어 태그 기반으로 확인합니다.
+ */
+function isOperator(player) {
+    return player.hasTag("op") || player.hasTag("admin");
+}
+
 // 채팅 제한 플레이어 관리
 const mutedPlayers = new Map();
 const MUTE_DURATION = 3 * 60; // 3분을 초 단위로 표시
@@ -45,7 +53,7 @@ world.beforeEvents.chatSend.subscribe((eventData) => {
 
     // 명령어 처리
     if (eventData.message === "!resetplayer") {
-        if (player.isOp()) {
+        if (isOperator(player)) { // PermissionLevel 사용
             resetJoinedPlayers();
         } else {
             player.sendMessage("§c이 명령어를 사용할 권한이 없습니다.");
@@ -80,23 +88,23 @@ function resetJoinedPlayers() {
 // 플레이어가 스폰될 때 이벤트 리스너 등록
 world.afterEvents.playerSpawn.subscribe((eventData) => {
     if (!eventData.initialSpawn) return;
-    
+
     const player = eventData.player;
     let joinedPlayers = world.getDynamicProperty("joinedPlayers") || "";
     let playerList = joinedPlayers ? joinedPlayers.split(",") : [];
-    
+
     if (!playerList.includes(player.name)) {
         // 처음 접속한 플레이어인 경우
         playerList.push(player.name);
         world.setDynamicProperty("joinedPlayers", playerList.join(","));
-        
+
         world.sendMessage(`§e새로운 플레이어 ${player.name}님이 서버에 처음 오셨습니다!`);
         player.sendMessage("§a환영합니다! 서버의 규칙을 확인해주세요!");
-        
+
         // 채팅 제한 설정
         mutedPlayers.set(player.name, Date.now() + (MUTE_DURATION * 1000));
         player.sendMessage("§c처음 접속하신 플레이어는 3분간 채팅이 제한됩니다.");
-        
+
     } else {
         world.sendMessage(`§b${player.name}님이 서버에 다시 접속하셨습니다.`);
         player.sendMessage("§a다시 오신 것을 환영합니다!");

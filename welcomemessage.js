@@ -17,11 +17,19 @@
  * 3. 월드에 비헤이비어 팩 적용
  * 
  * 관리자 명령어:
- * !resetplayer - 플레이어 접속 기록 초기화 (OP 권한 필요)
+ * !resetplayer - 플레이어 접속 기록 초기화 (op 또는 admin 태그 필요)
  */
 
 import { world, system } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
+
+/**
+ * 운영자 권한 확인 헬퍼 함수
+ * player.isOp()와 PermissionLevel이 제거되어 태그 기반으로 확인합니다.
+ */
+function isOperator(player) {
+    return player.hasTag("op") || player.hasTag("admin");
+}
 
 // 시작 아이템 세트 정의
 const STARTER_KITS = {
@@ -77,7 +85,7 @@ async function showStarterKitUI(player) {
 
         const selectedKit = Object.values(STARTER_KITS)[response.selection];
         await giveStarterKit(player, selectedKit);
-        
+
         player.sendMessage(`§a${selectedKit.name}가 지급되었습니다!`);
         world.sendMessage(`§e${player.name}님이 ${selectedKit.name}를 선택했습니다!`);
     } catch (error) {
@@ -112,8 +120,8 @@ function resetJoinedPlayers() {
 world.beforeEvents.chatSend.subscribe((eventData) => {
     if (eventData.message === "!resetplayer") {
         const player = eventData.sender;
-        // 관리자 권한 확인
-        if (player.isOp()) {
+        // 관리자 권한 확인 (PermissionLevel 사용)
+        if (isOperator(player)) {
             resetJoinedPlayers();
         } else {
             player.sendMessage("§c이 명령어를 사용할 권한이 없습니다.");
@@ -125,19 +133,19 @@ world.beforeEvents.chatSend.subscribe((eventData) => {
 // 플레이어가 스폰될 때 이벤트 리스너 등록
 world.afterEvents.playerSpawn.subscribe((eventData) => {
     if (!eventData.initialSpawn) return;
-    
+
     const player = eventData.player;
     let joinedPlayers = world.getDynamicProperty("joinedPlayers") || "";
     let playerList = joinedPlayers ? joinedPlayers.split(",") : [];
-    
+
     if (!playerList.includes(player.name)) {
         // 처음 접속한 플레이어인 경우
         playerList.push(player.name);
         world.setDynamicProperty("joinedPlayers", playerList.join(","));
-        
+
         world.sendMessage(`§e새로운 플레이어 ${player.name}님이 서버에 처음 오셨습니다!`);
         player.sendMessage("§a환영합니다! 서버의 규칙을 확인해주세요!");
-        
+
         //시작 아이템을 없애고 싶다면 아래 코드를 지우세요.
         // 시작 아이템 UI 표시
         system.runTimeout(() => {

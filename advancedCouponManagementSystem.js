@@ -15,9 +15,9 @@
  * 
  * [ 관리자 사용 방법 ]
  * 1. 관리자 권한 얻기:
- *    - 운영자 권한이 있어야 합니다 (/op [플레이어이름])
- *    - admin 태그도 필요합니다 (/tag [플레이어이름] add admin)
- *    - 두 가지 권한이 모두 있어야 관리자 기능을 사용할 수 있습니다
+ *    - admin 태그가 필요합니다 (/tag [플레이어이름] add admin)
+ *    - 또는 op 태그를 사용할 수 있습니다 (/tag [플레이어이름] add op)
+ *    - player.isOp()와 PermissionLevel은 제거되어 태그 기반으로 확인합니다
  * 
  * 2. 쿠폰 관리 메뉴 (!쿠폰관리):
  *    - 쿠폰 생성: 새로운 쿠폰을 만들 수 있습니다
@@ -49,6 +49,15 @@
 
 import { world, system } from "@minecraft/server";
 import { ModalFormData, ActionFormData } from "@minecraft/server-ui";
+
+/**
+ * 운영자 권한 확인 헬퍼 함수
+ * player.isOp()와 PermissionLevel이 제거되어 태그 기반으로 확인합니다.
+ * 사용 전 운영자에게 태그를 부여하세요: /tag @s add op 또는 /tag @s add admin
+ */
+function isOperator(player) {
+    return player.hasTag("op") || player.hasTag("admin");
+}
 
 // 쿠폰 데이터 저장소
 const COUPON_DATA_KEY = "coupons";
@@ -227,7 +236,7 @@ function createCoupon(player, code, description, reward) {
 function showCouponList(player) {
     const coupons = getCoupons();
     let message = "§e=== 쿠폰 목록 ===\n";
-    
+
     for (const [code, data] of Object.entries(coupons)) {
         message += `§f코드: ${code}\n설명: ${data.description}\n생성자: ${data.createdBy}\n\n`;
     }
@@ -419,15 +428,15 @@ function resetAllCoupons(player) {
         world.setDynamicProperty(USED_COUPONS_KEY, JSON.stringify({}));
         player.sendMessage("§c모든 쿠폰 데이터가 초기화되었습니다.");
         showCouponManageUI(player);
-        } catch (error) {
+    } catch (error) {
         console.warn("쿠폰 초기화 중 오류:", error);
         player.sendMessage("§c초기화 중 오류가 발생했습니다.");
     }
 }
 
-// 관리자 권한 체크 함수
+// 관리자 권한 체크 함수 (PermissionLevel 사용)
 function isAdmin(player) {
-    return player.isOp() && player.hasTag("admin");
+    return isOperator(player) && player.hasTag("admin");
 }
 
 // 이벤트 처리

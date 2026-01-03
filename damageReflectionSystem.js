@@ -44,10 +44,9 @@ world.afterEvents.entityHurt.subscribe((ev) => {
                 // 공격자에게 데미지 반사
                 attacker.applyDamage(damage);
 
-                // 공격자 위치에 파티클 효과 표시
-                const loc = attacker.location;
+                // 공격자 위치에 파티클 효과 표시 (Script API 사용)
                 try {
-                    attacker.runCommand(`particle minecraft:critical_hit_emitter ~~~`);
+                    attacker.dimension.spawnParticle("minecraft:critical_hit_emitter", attacker.location);
                 } catch (particleError) {
                     console.warn("파티클 효과 표시 실패:", particleError);
                 }

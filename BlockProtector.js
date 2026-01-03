@@ -30,6 +30,9 @@ const CANT_PLACE_SOUND = `note.harp`
 const CANT_PLACE_MESSAGE = `§c[ system ] 해당 블록은 설치할 수 없습니다.`
 const DB_KEY = "protectedAreas"
 
+// Dynamic Property 크기 제한 (약 16KB, 여유 공간 확보)
+const MAX_DYNAMIC_PROPERTY_SIZE = 15000;
+
 // 보호 영역 데이터 로드
 function loadProtectedAreas() {
     try {
@@ -41,12 +44,35 @@ function loadProtectedAreas() {
     }
 }
 
-// 보호 영역 데이터 저장
+// 보호 영역 데이터 저장 (크기 검증 포함)
 function saveProtectedAreas(areas) {
     try {
-        world.setDynamicProperty(DB_KEY, JSON.stringify(areas));
+        const jsonData = JSON.stringify(areas);
+
+        // 크기 제한 검사
+        if (jsonData.length > MAX_DYNAMIC_PROPERTY_SIZE) {
+            console.error(`보호 영역 데이터가 크기 제한 초과! (${jsonData.length}/${MAX_DYNAMIC_PROPERTY_SIZE} bytes)`);
+
+            // 일부 데이터만 저장 (80%)
+            const truncatedAreas = areas.slice(0, Math.floor(areas.length * 0.8));
+            world.setDynamicProperty(DB_KEY, JSON.stringify(truncatedAreas));
+
+            // 관리자에게 경고
+            world.getAllPlayers().forEach(p => {
+                if (p.hasTag(ADMIN_TAG)) {
+                    p.sendMessage("§c[ 경고 ] 보호 영역 데이터가 너무 큽니다! 일부 영역이 저장되지 않았습니다.");
+                    p.sendMessage(`§c현재 ${truncatedAreas.length}/${areas.length}개 영역만 저장됨`);
+                }
+            });
+
+            return false;
+        }
+
+        world.setDynamicProperty(DB_KEY, jsonData);
+        return true;
     } catch (error) {
         console.warn("데이터 저장 실패:", error);
+        return false;
     }
 }
 
@@ -95,6 +121,10 @@ world.beforeEvents.chatSend.subscribe(e => {
     }
 })
 
+// 디바운싱을 위한 쿨다운 맵 (isFirstEvent 대체)
+const interactionCooldowns = new Map();
+const DEBOUNCE_MS = 100;
+
 // 블록 상호작용 처리
 world.beforeEvents.playerInteractWithBlock.subscribe(e => {
     const player = e.player
@@ -103,32 +133,39 @@ world.beforeEvents.playerInteractWithBlock.subscribe(e => {
 
     if (item?.typeId === ADMIN_ITEM_NAME && player.hasTag(ADMIN_TAG)) {
         e.cancel = true
-        if (e.isFirstEvent) {
-            const location1 = player.getDynamicProperty(`location1`)
 
-            if (location1) {
-                const areas = loadProtectedAreas();
-                areas.push({
-                    pos1: location1,
-                    pos2: {
-                        x: block.location.x,
-                        y: block.location.y,
-                        z: block.location.z
-                    }
-                });
-                saveProtectedAreas(areas);
-                player.setDynamicProperty(`location1`, undefined);
-                player.sendMessage(`§e[ system ] 새로운 보호 영역이 저장되었습니다. (${location1.x}, ${location1.y}, ${location1.z}) - (${block.location.x}, ${block.location.y}, ${block.location.z})`);
-                PlaySound(player, `random.levelup`);
-            } else {
-                player.setDynamicProperty(`location1`, {
+        // 디바운싱: 중복 이벤트 방지 (isFirstEvent 대체)
+        const key = `${player.id}_${block.location.x}_${block.location.y}_${block.location.z}`;
+        const now = Date.now();
+        const lastInteraction = interactionCooldowns.get(key) || 0;
+
+        if (now - lastInteraction < DEBOUNCE_MS) return;
+        interactionCooldowns.set(key, now);
+
+        const location1 = player.getDynamicProperty(`location1`)
+
+        if (location1) {
+            const areas = loadProtectedAreas();
+            areas.push({
+                pos1: location1,
+                pos2: {
                     x: block.location.x,
                     y: block.location.y,
                     z: block.location.z
-                });
-                player.sendMessage(`§e[ system ] 첫번째 좌표가 저장되었습니다. (${block.location.x}, ${block.location.y}, ${block.location.z})`);
-                PlaySound(player, `random.orb`);
-            }
+                }
+            });
+            saveProtectedAreas(areas);
+            player.setDynamicProperty(`location1`, undefined);
+            player.sendMessage(`§e[ system ] 새로운 보호 영역이 저장되었습니다. (${location1.x}, ${location1.y}, ${location1.z}) - (${block.location.x}, ${block.location.y}, ${block.location.z})`);
+            PlaySound(player, `random.levelup`);
+        } else {
+            player.setDynamicProperty(`location1`, {
+                x: block.location.x,
+                y: block.location.y,
+                z: block.location.z
+            });
+            player.sendMessage(`§e[ system ] 첫번째 좌표가 저장되었습니다. (${block.location.x}, ${block.location.y}, ${block.location.z})`);
+            PlaySound(player, `random.orb`);
         }
     }
 })
@@ -172,8 +209,8 @@ world.beforeEvents.playerBreakBlock.subscribe(e => {
 // 좌표가 보호 영역 내에 있는지 확인
 function isInProtectedArea(pos1, pos2, blockLocation) {
     return blockLocation.x >= Math.min(pos1.x, pos2.x) && blockLocation.x <= Math.max(pos1.x, pos2.x) &&
-           blockLocation.y >= Math.min(pos1.y, pos2.y) && blockLocation.y <= Math.max(pos1.y, pos2.y) &&
-           blockLocation.z >= Math.min(pos1.z, pos2.z) && blockLocation.z <= Math.max(pos1.z, pos2.z);
+        blockLocation.y >= Math.min(pos1.y, pos2.y) && blockLocation.y <= Math.max(pos1.y, pos2.y) &&
+        blockLocation.z >= Math.min(pos1.z, pos2.z) && blockLocation.z <= Math.max(pos1.z, pos2.z);
 }
 
 function PlaySound(player, id) {

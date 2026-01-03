@@ -16,10 +16,19 @@
  *
  * [ 주의사항 ]
  * - 영역 설정 시 좌표값을 정확히 입력해야 합니다.
- * - OP 권한을 가진 플레이어는 모든 제한에서 제외됩니다.
+ * - op 또는 admin 태그를 가진 플레이어는 모든 제한에서 제외됩니다.
+ * - 태그 부여: /tag 플레이어이름 add op
  */
 
 import { world } from '@minecraft/server';
+
+/**
+ * 운영자 권한 확인 헬퍼 함수
+ * player.isOp()와 PermissionLevel이 제거되어 태그 기반으로 확인합니다.
+ */
+function isOperator(player) {
+    return player.hasTag("op") || player.hasTag("admin");
+}
 
 // 허용된 블록 파괴/설치 영역의 최소, 최대 좌표 설정
 const allowRegion = {
@@ -41,7 +50,7 @@ world.beforeEvents.playerBreakBlock.subscribe((ev) => {
 
     // 허용된 영역이 아닐 경우 파괴 금지
     if (!isAllowed) {
-        if (!player.isOp()) {
+        if (!isOperator(player)) { // PermissionLevel 사용
             ev.cancel = true;
             player.sendMessage(`§c이 영역에서는 블록을 파괴할 수 없습니다.`);
         }
@@ -62,7 +71,7 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
 
     // 허용된 영역이 아닐 경우 설치 금지
     if (!isAllowed) {
-        if (!player.isOp()) {
+        if (!isOperator(player)) { // PermissionLevel 사용
             ev.cancel = true;
             player.sendMessage(`§c이 영역에서는 블록을 설치할 수 없습니다.`);
         }

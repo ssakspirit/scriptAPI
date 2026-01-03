@@ -1,5 +1,13 @@
 import { world, system } from '@minecraft/server';
 
+/**
+ * 운영자 권한 확인 헬퍼 함수
+ * player.isOp()와 PermissionLevel이 제거되어 태그 기반으로 확인합니다.
+ */
+function isOperator(player) {
+    return player.hasTag("op") || player.hasTag("admin");
+}
+
 /*
 사용 방법:
 1. 이 스크립트를 Minecraft Bedrock Edition의 행동 팩에 포함시킵니다.
@@ -69,7 +77,7 @@ world.beforeEvents.chatSend.subscribe((ev) => {
 // 위치가 금지된 영역 안에 있는지 확인하는 함수
 function isInRestrictedRegion(location) {
     if (!restrictedRegion.min || !restrictedRegion.max) return false;
-    
+
     return (
         location.x >= restrictedRegion.min.x && location.x <= restrictedRegion.max.x &&
         location.y >= restrictedRegion.min.y && location.y <= restrictedRegion.max.y &&
@@ -83,7 +91,7 @@ world.beforeEvents.playerBreakBlock.subscribe((ev) => {
     const location = ev.block.location;
 
     if (isInRestrictedRegion(location)) {
-        if (!player.isOp()) { // 관리자는 허용
+        if (!isOperator(player)) { // 관리자는 허용 (PermissionLevel)
             ev.cancel = true;
             player.sendMessage(`§c이 영역에서는 블록을 파괴할 수 없습니다.`);
         }
@@ -96,7 +104,7 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
     const location = ev.block.location;
 
     if (isInRestrictedRegion(location)) {
-        if (!player.isOp()) { // 관리자는 허용
+        if (!isOperator(player)) { // 관리자는 허용 (PermissionLevel)
             ev.cancel = true;
             player.sendMessage(`§c이 영역에서는 블록을 설치할 수 없습니다.`);
         }

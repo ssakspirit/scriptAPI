@@ -1,6 +1,15 @@
 import { world, system } from "@minecraft/server";
 
 /**
+ * 운영자 권한 확인 헬퍼 함수
+ * player.isOp()와 PermissionLevel이 제거되어 태그 기반으로 확인합니다.
+ * 사용 전 운영자에게 태그를 부여하세요: /tag @s add op
+ */
+function isOperator(player) {
+    return player.hasTag("op") || player.hasTag("admin");
+}
+
+/**
  * PvP Tombstone System
  * 
  * 사용법:
@@ -13,7 +22,8 @@ import { world, system } from "@minecraft/server";
  * - 예시: !부활 Steve
  * 
  * 주의사항:
- * - 관리자 명령어는 OP 권한이 있는 플레이어만 사용할 수 있습니다.
+ * - 관리자 명령어는 op 또는 admin 태그가 있는 플레이어만 사용할 수 있습니다.
+ * - 태그 부여: /tag 플레이어이름 add op
  * - 부활 시 플레이어는 묘비가 있던 위치로 텔레포트됩니다.
  * - 사망한 플레이어는 관전자 모드가 되어 다른 플레이어와 상호작용할 수 없습니다.
  */
@@ -33,7 +43,7 @@ world.beforeEvents.chatSend.subscribe((event) => {
         event.cancel = true;  // 채팅 메시지 표시 취소
 
         // 관리자 권한 확인
-        if (!player.isOp()) {
+        if (!isOperator(player)) {
             player.sendMessage("§c이 명령어는 관리자만 사용할 수 있습니다!");
             return;
         }

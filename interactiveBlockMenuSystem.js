@@ -112,6 +112,10 @@ function showBlockUI(player, blockType, pos) {
     }
 }
 
+// 디바운싱을 위한 쿨다운 맵 (isFirstEvent 대체)
+const interactionCooldowns = new Map();
+const DEBOUNCE_MS = 100;
+
 // 블록 상호작용 이벤트 처리
 world.beforeEvents.playerInteractWithBlock.subscribe((e) => {
     const player = e.player;
@@ -119,15 +123,20 @@ world.beforeEvents.playerInteractWithBlock.subscribe((e) => {
     const item = e.itemStack;
 
     try {
-        // 첫 번째 이벤트인 경우에만 처리
-        if (e.isFirstEvent) {
-            // 블록 유효성 확인 후 맨손으로 상호작용하는 경우 (아이템이 없는 경우)
-            if (block.isValid() && !item && (block.typeId === "minecraft:diamond_block" || block.typeId === "minecraft:emerald_block")) {
-                e.cancel = true; // 기본 상호작용 취소
-                system.run(() => {
-                    showBlockUI(player, block.typeId, block.location);
-                });
-            }
+        // 디바운싱: 중복 이벤트 방지 (isFirstEvent 대체)
+        const key = `${player.id}_${block.location.x}_${block.location.y}_${block.location.z}`;
+        const now = Date.now();
+        const lastInteraction = interactionCooldowns.get(key) || 0;
+
+        if (now - lastInteraction < DEBOUNCE_MS) return;
+        interactionCooldowns.set(key, now);
+
+        // 블록 유효성 확인 후 맨손으로 상호작용하는 경우 (아이템이 없는 경우)
+        if (block.isValid() && !item && (block.typeId === "minecraft:diamond_block" || block.typeId === "minecraft:emerald_block")) {
+            e.cancel = true; // 기본 상호작용 취소
+            system.run(() => {
+                showBlockUI(player, block.typeId, block.location);
+            });
         }
     } catch (error) {
         console.warn("블록 상호작용 처리 중 오류:", error);

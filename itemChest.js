@@ -95,41 +95,53 @@ world.afterEvents.playerPlaceBlock.subscribe((event) => {
                 // 설치된 상자의 위치에서 블록 가져오기
                 const blockLocation = block.location;
                 const chest = player.dimension.getBlock(blockLocation);
-                
-                if (chest) {
-                    const inventory = chest.getComponent("inventory");
-                    if (inventory && inventory.container) {
-                        try {
-                            // 필수 아이템 추가
-                            for (const item of REQUIRED_ITEMS) {
-                                const itemStack = new ItemStack(item.type, item.amount);
-                                inventory.container.addItem(itemStack);
-                            }
 
-                            // 랜덤 아이템 추가
-                            const randomItems = getRandomItems();
-                            for (const item of randomItems) {
-                                const itemStack = new ItemStack(item.type, item.amount);
-                                inventory.container.addItem(itemStack);
-                            }
+                // 블록이 여전히 상자인지 확인 (40틱 후에도 존재하는지 검증)
+                if (!chest || chest.typeId !== "minecraft:chest") {
+                    player.sendMessage("§c상자가 사라졌습니다!");
+                    console.warn(`상자 블록이 더 이상 존재하지 않거나 다른 블록으로 변경되었습니다. (위치: ${blockLocation.x}, ${blockLocation.y}, ${blockLocation.z})`);
+                    return;
+                }
 
-                            player.sendMessage("§a상자에 아이템이 추가되었습니다!");
-                            player.sendMessage(`§e랜덤 아이템 ${randomItems.length}개가 추가되었습니다!`);
-                        } catch (itemError) {
-                            console.warn("아이템 추가 중 오류:", itemError);
-                            player.sendMessage("§c아이템 추가 실패!");
-                        }
-                    } else {
-                        console.warn("인벤토리 컴포넌트를 찾을 수 없습니다.");
-                        player.sendMessage("§c인벤토리를 찾을 수 없습니다!");
+                // 인벤토리 컴포넌트 유효성 확인
+                const inventory = chest.getComponent("inventory");
+                if (!inventory) {
+                    player.sendMessage("§c상자 인벤토리에 접근할 수 없습니다!");
+                    console.warn("상자의 인벤토리 컴포넌트를 찾을 수 없습니다.");
+                    return;
+                }
+
+                // 컨테이너 유효성 확인
+                if (!inventory.container) {
+                    player.sendMessage("§c상자 컨테이너에 접근할 수 없습니다!");
+                    console.warn("인벤토리 컨테이너가 없습니다.");
+                    return;
+                }
+
+                // 아이템 추가 처리
+                try {
+                    // 필수 아이템 추가
+                    for (const item of REQUIRED_ITEMS) {
+                        const itemStack = new ItemStack(item.type, item.amount);
+                        inventory.container.addItem(itemStack);
                     }
-                } else {
-                    console.warn("상자 블록을 찾을 수 없습니다.");
-                    player.sendMessage("§c상자를 찾을 수 없습니다!");
+
+                    // 랜덤 아이템 추가
+                    const randomItems = getRandomItems();
+                    for (const item of randomItems) {
+                        const itemStack = new ItemStack(item.type, item.amount);
+                        inventory.container.addItem(itemStack);
+                    }
+
+                    player.sendMessage("§a상자에 아이템이 추가되었습니다!");
+                    player.sendMessage(`§e랜덤 아이템 ${randomItems.length}개가 추가되었습니다!`);
+                } catch (itemError) {
+                    console.warn("아이템 추가 중 오류:", itemError);
+                    player.sendMessage("§c아이템 추가 중 오류가 발생했습니다!");
                 }
             } catch (error) {
-                console.warn("상자에 아이템을 추가하는 중 오류 발생:", error);
-                player.sendMessage("§c오류가 발생했습니다!");
+                console.warn("상자 접근 오류:", error);
+                player.sendMessage("§c상자 처리 중 오류가 발생했습니다!");
             }
         }, 40);
     }

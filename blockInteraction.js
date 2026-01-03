@@ -89,53 +89,63 @@ const MAGIC_WAND = {
     name: "마법지팡이"
 };
 
+// 디바운싱을 위한 쿨다운 맵 (isFirstEvent 대체)
+const interactionCooldowns = new Map();
+const DEBOUNCE_MS = 100;
+
 world.beforeEvents.playerInteractWithBlock.subscribe(e => {
     const player = e.player;
     const block = e.block;
     const itemStack = e.itemStack;
 
-    if (e.isFirstEvent) {
-        try {
-            if (itemStack?.typeId === MAGIC_WAND.typeId && 
-                itemStack?.nameTag === MAGIC_WAND.name) {
-                
-                const blockCommands = BLOCK_COMMANDS[block.typeId];
-                
-                if (blockCommands) {
-                    const pos = block.location;
-                    let commandsFailed = 0;
-                    system.run(() => {
-                        // 모든 명령어 실행
-                        for (const cmd of blockCommands.commands) {
-                            try {
-                                // @p를 플레이어 이름으로 변환
-                                const processedCmd = cmd
-                                    .replace(/@p/g, `"${player.name}"`)
-                                    .replace(/~ ~1 ~/g, `${pos.x} ${pos.y + 1} ${pos.z}`)
-                                    .replace(/~ ~ ~/g, `${pos.x} ${pos.y} ${pos.z}`);
+    // 디바운싱: 중복 이벤트 방지 (isFirstEvent 대체)
+    const key = `${player.id}_${block.location.x}_${block.location.y}_${block.location.z}`;
+    const now = Date.now();
+    const lastInteraction = interactionCooldowns.get(key) || 0;
 
-                                const result = player.dimension.runCommand(processedCmd);
+    if (now - lastInteraction < DEBOUNCE_MS) return;
+    interactionCooldowns.set(key, now);
 
-                                if (result.successCount === 0) {
-                                    console.warn(`명령어 실행 실패: ${cmd}`);
-                                    commandsFailed++;
-                                }
-                            } catch (cmdError) {
-                                console.warn(`명령어 오류: ${cmd}`, cmdError);
+    try {
+        if (itemStack?.typeId === MAGIC_WAND.typeId &&
+            itemStack?.nameTag === MAGIC_WAND.name) {
+
+            const blockCommands = BLOCK_COMMANDS[block.typeId];
+
+            if (blockCommands) {
+                const pos = block.location;
+                let commandsFailed = 0;
+                system.run(() => {
+                    // 모든 명령어 실행
+                    for (const cmd of blockCommands.commands) {
+                        try {
+                            // @p를 플레이어 이름으로 변환
+                            const processedCmd = cmd
+                                .replace(/@p/g, `"${player.name}"`)
+                                .replace(/~ ~1 ~/g, `${pos.x} ${pos.y + 1} ${pos.z}`)
+                                .replace(/~ ~ ~/g, `${pos.x} ${pos.y} ${pos.z}`);
+
+                            const result = player.dimension.runCommand(processedCmd);
+
+                            if (result.successCount === 0) {
+                                console.warn(`명령어 실행 실패: ${cmd}`);
                                 commandsFailed++;
                             }
+                        } catch (cmdError) {
+                            console.warn(`명령어 오류: ${cmd}`, cmdError);
+                            commandsFailed++;
                         }
+                    }
 
-                        if (commandsFailed === 0) {
-                            player.sendMessage(blockCommands.message);
-                        } else {
-                            player.sendMessage(`§c일부 명령어 실행에 실패했습니다. (${commandsFailed}/${blockCommands.commands.length})`);
-                        }
-                    });
-                }
+                    if (commandsFailed === 0) {
+                        player.sendMessage(blockCommands.message);
+                    } else {
+                        player.sendMessage(`§c일부 명령어 실행에 실패했습니다. (${commandsFailed}/${blockCommands.commands.length})`);
+                    }
+                });
             }
-        } catch (error) {
-            console.warn("블록 상호작용 처리 중 오류:", error);
         }
+    } catch (error) {
+        console.warn("블록 상호작용 처리 중 오류:", error);
     }
 });
