@@ -1,0 +1,44 @@
+{
+    "format_version": "1.8.0",
+    "animations": {
+        "animation.friendly_zombie.move": {
+            "loop": true,
+            "bones": {
+                "leftarm": {
+                    "rotation": ["math.cos(query.modified_distance_moved * 67.5) * 45", 0, 0]
+                },
+                "rightarm": {
+                    "rotation": ["-math.cos(query.modified_distance_moved * 67.5) * 45", 0, 0]
+                },
+                "leftleg": {
+                    "rotation": ["-math.cos(query.modified_distance_moved * 67.5) * 45", 0, 0]
+                },
+                "rightleg": {
+                    "rotation": ["math.cos(query.modified_distance_moved * 67.5) * 45", 0, 0]
+                }
+            }
+        },
+        "animation.friendly_zombie.attack": {
+            "loop": false,
+            "bones": {
+                "leftarm": {
+                    "rotation": ["-90 - math.sin(query.life_time * 500) * 20", 30, 0]
+                },
+                "rightarm": {
+                    "rotation": ["-90 - math.sin(query.life_time * 500) * 20", -30, 0]
+                }
+            }
+        },
+        "animation.friendly_zombie.idle": {
+            "loop": true,
+            "bones": {
+                "leftarm": {
+                    "rotation": ["-90", 0, 0]
+                },
+                "rightarm": {
+                    "rotation": ["-90", 0, 0]
+                }
+            }
+        }
+    }
+}

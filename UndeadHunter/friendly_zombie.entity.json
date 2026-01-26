@@ -1,0 +1,36 @@
+{
+    "format_version": "1.10.0",
+    "minecraft:client_entity": {
+        "description": {
+            "identifier": "custom:friendly_zombie",
+            "materials": {
+                "default": "zombie"
+            },
+            "textures": {
+                "default": "textures/entity/zombie/zombie"
+            },
+            "geometry": {
+                "default": "geometry.zombie"
+            },
+            "animations": {
+                "move": "animation.friendly_zombie.move",
+                "attack": "animation.friendly_zombie.attack",
+                "idle": "animation.friendly_zombie.idle"
+            },
+            "scripts": {
+                "animate": [
+                    "idle",
+                    { "move": "query.modified_move_speed > 0.0" },
+                    { "attack": "query.is_delayed_attacking" }
+                ]
+            },
+            "render_controllers": [
+                "controller.render.zombie"
+            ],
+            "spawn_egg": {
+                "base_color": "#00FF00",
+                "overlay_color": "#2E8B57"
+            }
+        }
+    }
+}
