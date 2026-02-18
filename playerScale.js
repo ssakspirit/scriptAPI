@@ -14,32 +14,47 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
  * - 크기 초기화 기능 제공
  */
 
-// Scale 컴포넌트 경고를 한 번만 출력하기 위한 Set
-const warnedPlayers = new Set();
+// 마지막으로 적용된 scale 값 추적 (변경 시에만 triggerEvent 호출)
+const lastScaleIndex = new Map();
 
 // 플레이어의 크기를 지속적으로 업데이트하는 시스템
 system.runInterval(() => {
     for (const player of world.getAllPlayers()) {
         const value = player.getDynamicProperty(`scaleValue`)  // 저장된 크기 값 불러오기
-        const ScaleComponent = player.getComponent("minecraft:scale")
 
-        // ScaleComponent와 value의 타입 검증
-        if (ScaleComponent) {
-            if (typeof value === 'number' && !isNaN(value)) {
-                ScaleComponent.value = value / 10  // 실제 크기는 설정값의 1/10
-            } else {
-                ScaleComponent.value = 1.0  // 기본 크기
-                if (value !== undefined) {
-                    console.warn(`잘못된 scaleValue for ${player.name}: ${value} (타입: ${typeof value})`);
-                }
-            }
-        } else {
-            // Scale 컴포넌트가 없는 경우 한 번만 경고
-            if (!warnedPlayers.has(player.id)) {
-                console.warn(`[PlayerScale] ${player.name}에게 scale 컴포넌트가 없습니다.`);
-                console.warn(`[PlayerScale] 해결 방법: scaleplayer.json을 behavior pack의 entities 폴더에 player.json으로 복사하세요.`);
-                warnedPlayers.add(player.id);
-            }
+        // 슬라이더 값(1~100)을 그대로 이벤트 인덱스로 사용, 없으면 기본값 10
+        const index = (typeof value === 'number' && !isNaN(value))
+            ? Math.min(100, Math.max(1, Math.round(value)))
+            : 10;
+
+        // 값이 변경된 경우에만 이벤트 트리거
+        if (lastScaleIndex.get(player.id) !== index) {
+            player.triggerEvent(`set_scale_${index}`);
+            lastScaleIndex.set(player.id, index);
+        }
+
+        // 크기에 비례한 이동 속도 및 점프 조절 (매 인터벌마다 갱신)
+        // - EntityMovementComponent.value가 2.6.0-beta에서 read-only로 변경되어
+        //   speed / slowness / jump_boost 효과로 대체
+        // - 효과 duration(10틱) > interval(5틱) 이므로 끊기지 않고 유지됨
+        // - scale = 1.0(기본)일 때는 효과 미적용 → 자연 소멸로 기본값 복귀
+        //
+        // 속도 공식: amplifier = round((|scale - 1.0|) * 4)
+        //   scale < 1.0 → slowness  (예: scale 0.5 → amp 3 → 약 0.55배 속도)
+        //   scale > 1.0 → speed     (예: scale 2.0 → amp 4 → 약 2배 속도)
+        //
+        // 점프 공식: amplifier = round((scale - 1.0) * 2)  ← 속도의 절반 세기
+        //   scale > 1.0 → jump_boost (예: scale 2.0 → amp 2 / scale 5.0 → amp 8)
+        //   scale < 1.0 → 점프 감소 효과 없음 (vanilla 미지원)
+        const scale = index / 10;
+        if (scale < 1.0) {
+            const slowAmp = Math.round((1.0 - scale) * 6);
+            player.addEffect("slowness", 10, { amplifier: slowAmp, showParticles: false });
+        } else if (scale > 1.0) {
+            const speedAmp = Math.round((scale - 1.0) * 4);
+            const jumpAmp = Math.round((scale - 1.0) * 2);
+            player.addEffect("speed", 10, { amplifier: speedAmp, showParticles: false });
+            player.addEffect("jump_boost", 10, { amplifier: jumpAmp, showParticles: false });
         }
     }
 }, 5)  // 5틱마다 실행
@@ -116,9 +131,7 @@ function setValueForm(player) {
     const defaultValue = (typeof ScaleValue === 'number' && !isNaN(ScaleValue)) ? ScaleValue : 10;
 
     form.title("사이즈 변경하기");
-    // Note: server-ui 2.1.0-beta의 slider는 4개 파라미터만 지원 (defaultValue 미지원)
-    // 현재 값은 메시지로 표시
-    form.slider(`§e* 기본 사이즈 - 10\n§7현재 값: ${defaultValue}\n\n§r사이즈`, 1, 100, 1);
+    form.slider(`§e* 기본 사이즈 - 10\n§r사이즈`, 1, 100, { valueStep: 1, defaultValue: defaultValue });
     form.submitButton(`변경하기`)
     form.show(player).then(r => {
         if (r.canceled) return

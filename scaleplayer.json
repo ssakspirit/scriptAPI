@@ -41,11 +41,511 @@
 						"target": "self"
 					}
 				}
+			},
+			"scale_1": {
+				"minecraft:scale": {
+					"value": 0.1
+				}
+			},
+			"scale_2": {
+				"minecraft:scale": {
+					"value": 0.2
+				}
+			},
+			"scale_3": {
+				"minecraft:scale": {
+					"value": 0.3
+				}
+			},
+			"scale_4": {
+				"minecraft:scale": {
+					"value": 0.4
+				}
+			},
+			"scale_5": {
+				"minecraft:scale": {
+					"value": 0.5
+				}
+			},
+			"scale_6": {
+				"minecraft:scale": {
+					"value": 0.6
+				}
+			},
+			"scale_7": {
+				"minecraft:scale": {
+					"value": 0.7
+				}
+			},
+			"scale_8": {
+				"minecraft:scale": {
+					"value": 0.8
+				}
+			},
+			"scale_9": {
+				"minecraft:scale": {
+					"value": 0.9
+				}
+			},
+			"scale_10": {
+				"minecraft:scale": {
+					"value": 1.0
+				}
+			},
+			"scale_11": {
+				"minecraft:scale": {
+					"value": 1.1
+				}
+			},
+			"scale_12": {
+				"minecraft:scale": {
+					"value": 1.2
+				}
+			},
+			"scale_13": {
+				"minecraft:scale": {
+					"value": 1.3
+				}
+			},
+			"scale_14": {
+				"minecraft:scale": {
+					"value": 1.4
+				}
+			},
+			"scale_15": {
+				"minecraft:scale": {
+					"value": 1.5
+				}
+			},
+			"scale_16": {
+				"minecraft:scale": {
+					"value": 1.6
+				}
+			},
+			"scale_17": {
+				"minecraft:scale": {
+					"value": 1.7
+				}
+			},
+			"scale_18": {
+				"minecraft:scale": {
+					"value": 1.8
+				}
+			},
+			"scale_19": {
+				"minecraft:scale": {
+					"value": 1.9
+				}
+			},
+			"scale_20": {
+				"minecraft:scale": {
+					"value": 2.0
+				}
+			},
+			"scale_21": {
+				"minecraft:scale": {
+					"value": 2.1
+				}
+			},
+			"scale_22": {
+				"minecraft:scale": {
+					"value": 2.2
+				}
+			},
+			"scale_23": {
+				"minecraft:scale": {
+					"value": 2.3
+				}
+			},
+			"scale_24": {
+				"minecraft:scale": {
+					"value": 2.4
+				}
+			},
+			"scale_25": {
+				"minecraft:scale": {
+					"value": 2.5
+				}
+			},
+			"scale_26": {
+				"minecraft:scale": {
+					"value": 2.6
+				}
+			},
+			"scale_27": {
+				"minecraft:scale": {
+					"value": 2.7
+				}
+			},
+			"scale_28": {
+				"minecraft:scale": {
+					"value": 2.8
+				}
+			},
+			"scale_29": {
+				"minecraft:scale": {
+					"value": 2.9
+				}
+			},
+			"scale_30": {
+				"minecraft:scale": {
+					"value": 3.0
+				}
+			},
+			"scale_31": {
+				"minecraft:scale": {
+					"value": 3.1
+				}
+			},
+			"scale_32": {
+				"minecraft:scale": {
+					"value": 3.2
+				}
+			},
+			"scale_33": {
+				"minecraft:scale": {
+					"value": 3.3
+				}
+			},
+			"scale_34": {
+				"minecraft:scale": {
+					"value": 3.4
+				}
+			},
+			"scale_35": {
+				"minecraft:scale": {
+					"value": 3.5
+				}
+			},
+			"scale_36": {
+				"minecraft:scale": {
+					"value": 3.6
+				}
+			},
+			"scale_37": {
+				"minecraft:scale": {
+					"value": 3.7
+				}
+			},
+			"scale_38": {
+				"minecraft:scale": {
+					"value": 3.8
+				}
+			},
+			"scale_39": {
+				"minecraft:scale": {
+					"value": 3.9
+				}
+			},
+			"scale_40": {
+				"minecraft:scale": {
+					"value": 4.0
+				}
+			},
+			"scale_41": {
+				"minecraft:scale": {
+					"value": 4.1
+				}
+			},
+			"scale_42": {
+				"minecraft:scale": {
+					"value": 4.2
+				}
+			},
+			"scale_43": {
+				"minecraft:scale": {
+					"value": 4.3
+				}
+			},
+			"scale_44": {
+				"minecraft:scale": {
+					"value": 4.4
+				}
+			},
+			"scale_45": {
+				"minecraft:scale": {
+					"value": 4.5
+				}
+			},
+			"scale_46": {
+				"minecraft:scale": {
+					"value": 4.6
+				}
+			},
+			"scale_47": {
+				"minecraft:scale": {
+					"value": 4.7
+				}
+			},
+			"scale_48": {
+				"minecraft:scale": {
+					"value": 4.8
+				}
+			},
+			"scale_49": {
+				"minecraft:scale": {
+					"value": 4.9
+				}
+			},
+			"scale_50": {
+				"minecraft:scale": {
+					"value": 5.0
+				}
+			},
+			"scale_51": {
+				"minecraft:scale": {
+					"value": 5.1
+				}
+			},
+			"scale_52": {
+				"minecraft:scale": {
+					"value": 5.2
+				}
+			},
+			"scale_53": {
+				"minecraft:scale": {
+					"value": 5.3
+				}
+			},
+			"scale_54": {
+				"minecraft:scale": {
+					"value": 5.4
+				}
+			},
+			"scale_55": {
+				"minecraft:scale": {
+					"value": 5.5
+				}
+			},
+			"scale_56": {
+				"minecraft:scale": {
+					"value": 5.6
+				}
+			},
+			"scale_57": {
+				"minecraft:scale": {
+					"value": 5.7
+				}
+			},
+			"scale_58": {
+				"minecraft:scale": {
+					"value": 5.8
+				}
+			},
+			"scale_59": {
+				"minecraft:scale": {
+					"value": 5.9
+				}
+			},
+			"scale_60": {
+				"minecraft:scale": {
+					"value": 6.0
+				}
+			},
+			"scale_61": {
+				"minecraft:scale": {
+					"value": 6.1
+				}
+			},
+			"scale_62": {
+				"minecraft:scale": {
+					"value": 6.2
+				}
+			},
+			"scale_63": {
+				"minecraft:scale": {
+					"value": 6.3
+				}
+			},
+			"scale_64": {
+				"minecraft:scale": {
+					"value": 6.4
+				}
+			},
+			"scale_65": {
+				"minecraft:scale": {
+					"value": 6.5
+				}
+			},
+			"scale_66": {
+				"minecraft:scale": {
+					"value": 6.6
+				}
+			},
+			"scale_67": {
+				"minecraft:scale": {
+					"value": 6.7
+				}
+			},
+			"scale_68": {
+				"minecraft:scale": {
+					"value": 6.8
+				}
+			},
+			"scale_69": {
+				"minecraft:scale": {
+					"value": 6.9
+				}
+			},
+			"scale_70": {
+				"minecraft:scale": {
+					"value": 7.0
+				}
+			},
+			"scale_71": {
+				"minecraft:scale": {
+					"value": 7.1
+				}
+			},
+			"scale_72": {
+				"minecraft:scale": {
+					"value": 7.2
+				}
+			},
+			"scale_73": {
+				"minecraft:scale": {
+					"value": 7.3
+				}
+			},
+			"scale_74": {
+				"minecraft:scale": {
+					"value": 7.4
+				}
+			},
+			"scale_75": {
+				"minecraft:scale": {
+					"value": 7.5
+				}
+			},
+			"scale_76": {
+				"minecraft:scale": {
+					"value": 7.6
+				}
+			},
+			"scale_77": {
+				"minecraft:scale": {
+					"value": 7.7
+				}
+			},
+			"scale_78": {
+				"minecraft:scale": {
+					"value": 7.8
+				}
+			},
+			"scale_79": {
+				"minecraft:scale": {
+					"value": 7.9
+				}
+			},
+			"scale_80": {
+				"minecraft:scale": {
+					"value": 8.0
+				}
+			},
+			"scale_81": {
+				"minecraft:scale": {
+					"value": 8.1
+				}
+			},
+			"scale_82": {
+				"minecraft:scale": {
+					"value": 8.2
+				}
+			},
+			"scale_83": {
+				"minecraft:scale": {
+					"value": 8.3
+				}
+			},
+			"scale_84": {
+				"minecraft:scale": {
+					"value": 8.4
+				}
+			},
+			"scale_85": {
+				"minecraft:scale": {
+					"value": 8.5
+				}
+			},
+			"scale_86": {
+				"minecraft:scale": {
+					"value": 8.6
+				}
+			},
+			"scale_87": {
+				"minecraft:scale": {
+					"value": 8.7
+				}
+			},
+			"scale_88": {
+				"minecraft:scale": {
+					"value": 8.8
+				}
+			},
+			"scale_89": {
+				"minecraft:scale": {
+					"value": 8.9
+				}
+			},
+			"scale_90": {
+				"minecraft:scale": {
+					"value": 9.0
+				}
+			},
+			"scale_91": {
+				"minecraft:scale": {
+					"value": 9.1
+				}
+			},
+			"scale_92": {
+				"minecraft:scale": {
+					"value": 9.2
+				}
+			},
+			"scale_93": {
+				"minecraft:scale": {
+					"value": 9.3
+				}
+			},
+			"scale_94": {
+				"minecraft:scale": {
+					"value": 9.4
+				}
+			},
+			"scale_95": {
+				"minecraft:scale": {
+					"value": 9.5
+				}
+			},
+			"scale_96": {
+				"minecraft:scale": {
+					"value": 9.6
+				}
+			},
+			"scale_97": {
+				"minecraft:scale": {
+					"value": 9.7
+				}
+			},
+			"scale_98": {
+				"minecraft:scale": {
+					"value": 9.8
+				}
+			},
+			"scale_99": {
+				"minecraft:scale": {
+					"value": 9.9
+				}
+			},
+			"scale_100": {
+				"minecraft:scale": {
+					"value": 10.0
+				}
 			}
 		},
 		"components": {
 			"minecraft:scale": {
-				"value": 0.1
+				"value": 1.0
 			},
 			"minecraft:experience_reward": {
 				"on_death": "Math.Min(query.player_level * 7, 100)"
@@ -213,6 +713,706 @@
 				"remove": {
 					"component_groups": [
 						"minecraft:raid_trigger"
+					]
+				}
+			},
+			"set_scale_1": {
+				"add": {
+					"component_groups": [
+						"scale_1"
+					]
+				}
+			},
+			"set_scale_2": {
+				"add": {
+					"component_groups": [
+						"scale_2"
+					]
+				}
+			},
+			"set_scale_3": {
+				"add": {
+					"component_groups": [
+						"scale_3"
+					]
+				}
+			},
+			"set_scale_4": {
+				"add": {
+					"component_groups": [
+						"scale_4"
+					]
+				}
+			},
+			"set_scale_5": {
+				"add": {
+					"component_groups": [
+						"scale_5"
+					]
+				}
+			},
+			"set_scale_6": {
+				"add": {
+					"component_groups": [
+						"scale_6"
+					]
+				}
+			},
+			"set_scale_7": {
+				"add": {
+					"component_groups": [
+						"scale_7"
+					]
+				}
+			},
+			"set_scale_8": {
+				"add": {
+					"component_groups": [
+						"scale_8"
+					]
+				}
+			},
+			"set_scale_9": {
+				"add": {
+					"component_groups": [
+						"scale_9"
+					]
+				}
+			},
+			"set_scale_10": {
+				"add": {
+					"component_groups": [
+						"scale_10"
+					]
+				}
+			},
+			"set_scale_11": {
+				"add": {
+					"component_groups": [
+						"scale_11"
+					]
+				}
+			},
+			"set_scale_12": {
+				"add": {
+					"component_groups": [
+						"scale_12"
+					]
+				}
+			},
+			"set_scale_13": {
+				"add": {
+					"component_groups": [
+						"scale_13"
+					]
+				}
+			},
+			"set_scale_14": {
+				"add": {
+					"component_groups": [
+						"scale_14"
+					]
+				}
+			},
+			"set_scale_15": {
+				"add": {
+					"component_groups": [
+						"scale_15"
+					]
+				}
+			},
+			"set_scale_16": {
+				"add": {
+					"component_groups": [
+						"scale_16"
+					]
+				}
+			},
+			"set_scale_17": {
+				"add": {
+					"component_groups": [
+						"scale_17"
+					]
+				}
+			},
+			"set_scale_18": {
+				"add": {
+					"component_groups": [
+						"scale_18"
+					]
+				}
+			},
+			"set_scale_19": {
+				"add": {
+					"component_groups": [
+						"scale_19"
+					]
+				}
+			},
+			"set_scale_20": {
+				"add": {
+					"component_groups": [
+						"scale_20"
+					]
+				}
+			},
+			"set_scale_21": {
+				"add": {
+					"component_groups": [
+						"scale_21"
+					]
+				}
+			},
+			"set_scale_22": {
+				"add": {
+					"component_groups": [
+						"scale_22"
+					]
+				}
+			},
+			"set_scale_23": {
+				"add": {
+					"component_groups": [
+						"scale_23"
+					]
+				}
+			},
+			"set_scale_24": {
+				"add": {
+					"component_groups": [
+						"scale_24"
+					]
+				}
+			},
+			"set_scale_25": {
+				"add": {
+					"component_groups": [
+						"scale_25"
+					]
+				}
+			},
+			"set_scale_26": {
+				"add": {
+					"component_groups": [
+						"scale_26"
+					]
+				}
+			},
+			"set_scale_27": {
+				"add": {
+					"component_groups": [
+						"scale_27"
+					]
+				}
+			},
+			"set_scale_28": {
+				"add": {
+					"component_groups": [
+						"scale_28"
+					]
+				}
+			},
+			"set_scale_29": {
+				"add": {
+					"component_groups": [
+						"scale_29"
+					]
+				}
+			},
+			"set_scale_30": {
+				"add": {
+					"component_groups": [
+						"scale_30"
+					]
+				}
+			},
+			"set_scale_31": {
+				"add": {
+					"component_groups": [
+						"scale_31"
+					]
+				}
+			},
+			"set_scale_32": {
+				"add": {
+					"component_groups": [
+						"scale_32"
+					]
+				}
+			},
+			"set_scale_33": {
+				"add": {
+					"component_groups": [
+						"scale_33"
+					]
+				}
+			},
+			"set_scale_34": {
+				"add": {
+					"component_groups": [
+						"scale_34"
+					]
+				}
+			},
+			"set_scale_35": {
+				"add": {
+					"component_groups": [
+						"scale_35"
+					]
+				}
+			},
+			"set_scale_36": {
+				"add": {
+					"component_groups": [
+						"scale_36"
+					]
+				}
+			},
+			"set_scale_37": {
+				"add": {
+					"component_groups": [
+						"scale_37"
+					]
+				}
+			},
+			"set_scale_38": {
+				"add": {
+					"component_groups": [
+						"scale_38"
+					]
+				}
+			},
+			"set_scale_39": {
+				"add": {
+					"component_groups": [
+						"scale_39"
+					]
+				}
+			},
+			"set_scale_40": {
+				"add": {
+					"component_groups": [
+						"scale_40"
+					]
+				}
+			},
+			"set_scale_41": {
+				"add": {
+					"component_groups": [
+						"scale_41"
+					]
+				}
+			},
+			"set_scale_42": {
+				"add": {
+					"component_groups": [
+						"scale_42"
+					]
+				}
+			},
+			"set_scale_43": {
+				"add": {
+					"component_groups": [
+						"scale_43"
+					]
+				}
+			},
+			"set_scale_44": {
+				"add": {
+					"component_groups": [
+						"scale_44"
+					]
+				}
+			},
+			"set_scale_45": {
+				"add": {
+					"component_groups": [
+						"scale_45"
+					]
+				}
+			},
+			"set_scale_46": {
+				"add": {
+					"component_groups": [
+						"scale_46"
+					]
+				}
+			},
+			"set_scale_47": {
+				"add": {
+					"component_groups": [
+						"scale_47"
+					]
+				}
+			},
+			"set_scale_48": {
+				"add": {
+					"component_groups": [
+						"scale_48"
+					]
+				}
+			},
+			"set_scale_49": {
+				"add": {
+					"component_groups": [
+						"scale_49"
+					]
+				}
+			},
+			"set_scale_50": {
+				"add": {
+					"component_groups": [
+						"scale_50"
+					]
+				}
+			},
+			"set_scale_51": {
+				"add": {
+					"component_groups": [
+						"scale_51"
+					]
+				}
+			},
+			"set_scale_52": {
+				"add": {
+					"component_groups": [
+						"scale_52"
+					]
+				}
+			},
+			"set_scale_53": {
+				"add": {
+					"component_groups": [
+						"scale_53"
+					]
+				}
+			},
+			"set_scale_54": {
+				"add": {
+					"component_groups": [
+						"scale_54"
+					]
+				}
+			},
+			"set_scale_55": {
+				"add": {
+					"component_groups": [
+						"scale_55"
+					]
+				}
+			},
+			"set_scale_56": {
+				"add": {
+					"component_groups": [
+						"scale_56"
+					]
+				}
+			},
+			"set_scale_57": {
+				"add": {
+					"component_groups": [
+						"scale_57"
+					]
+				}
+			},
+			"set_scale_58": {
+				"add": {
+					"component_groups": [
+						"scale_58"
+					]
+				}
+			},
+			"set_scale_59": {
+				"add": {
+					"component_groups": [
+						"scale_59"
+					]
+				}
+			},
+			"set_scale_60": {
+				"add": {
+					"component_groups": [
+						"scale_60"
+					]
+				}
+			},
+			"set_scale_61": {
+				"add": {
+					"component_groups": [
+						"scale_61"
+					]
+				}
+			},
+			"set_scale_62": {
+				"add": {
+					"component_groups": [
+						"scale_62"
+					]
+				}
+			},
+			"set_scale_63": {
+				"add": {
+					"component_groups": [
+						"scale_63"
+					]
+				}
+			},
+			"set_scale_64": {
+				"add": {
+					"component_groups": [
+						"scale_64"
+					]
+				}
+			},
+			"set_scale_65": {
+				"add": {
+					"component_groups": [
+						"scale_65"
+					]
+				}
+			},
+			"set_scale_66": {
+				"add": {
+					"component_groups": [
+						"scale_66"
+					]
+				}
+			},
+			"set_scale_67": {
+				"add": {
+					"component_groups": [
+						"scale_67"
+					]
+				}
+			},
+			"set_scale_68": {
+				"add": {
+					"component_groups": [
+						"scale_68"
+					]
+				}
+			},
+			"set_scale_69": {
+				"add": {
+					"component_groups": [
+						"scale_69"
+					]
+				}
+			},
+			"set_scale_70": {
+				"add": {
+					"component_groups": [
+						"scale_70"
+					]
+				}
+			},
+			"set_scale_71": {
+				"add": {
+					"component_groups": [
+						"scale_71"
+					]
+				}
+			},
+			"set_scale_72": {
+				"add": {
+					"component_groups": [
+						"scale_72"
+					]
+				}
+			},
+			"set_scale_73": {
+				"add": {
+					"component_groups": [
+						"scale_73"
+					]
+				}
+			},
+			"set_scale_74": {
+				"add": {
+					"component_groups": [
+						"scale_74"
+					]
+				}
+			},
+			"set_scale_75": {
+				"add": {
+					"component_groups": [
+						"scale_75"
+					]
+				}
+			},
+			"set_scale_76": {
+				"add": {
+					"component_groups": [
+						"scale_76"
+					]
+				}
+			},
+			"set_scale_77": {
+				"add": {
+					"component_groups": [
+						"scale_77"
+					]
+				}
+			},
+			"set_scale_78": {
+				"add": {
+					"component_groups": [
+						"scale_78"
+					]
+				}
+			},
+			"set_scale_79": {
+				"add": {
+					"component_groups": [
+						"scale_79"
+					]
+				}
+			},
+			"set_scale_80": {
+				"add": {
+					"component_groups": [
+						"scale_80"
+					]
+				}
+			},
+			"set_scale_81": {
+				"add": {
+					"component_groups": [
+						"scale_81"
+					]
+				}
+			},
+			"set_scale_82": {
+				"add": {
+					"component_groups": [
+						"scale_82"
+					]
+				}
+			},
+			"set_scale_83": {
+				"add": {
+					"component_groups": [
+						"scale_83"
+					]
+				}
+			},
+			"set_scale_84": {
+				"add": {
+					"component_groups": [
+						"scale_84"
+					]
+				}
+			},
+			"set_scale_85": {
+				"add": {
+					"component_groups": [
+						"scale_85"
+					]
+				}
+			},
+			"set_scale_86": {
+				"add": {
+					"component_groups": [
+						"scale_86"
+					]
+				}
+			},
+			"set_scale_87": {
+				"add": {
+					"component_groups": [
+						"scale_87"
+					]
+				}
+			},
+			"set_scale_88": {
+				"add": {
+					"component_groups": [
+						"scale_88"
+					]
+				}
+			},
+			"set_scale_89": {
+				"add": {
+					"component_groups": [
+						"scale_89"
+					]
+				}
+			},
+			"set_scale_90": {
+				"add": {
+					"component_groups": [
+						"scale_90"
+					]
+				}
+			},
+			"set_scale_91": {
+				"add": {
+					"component_groups": [
+						"scale_91"
+					]
+				}
+			},
+			"set_scale_92": {
+				"add": {
+					"component_groups": [
+						"scale_92"
+					]
+				}
+			},
+			"set_scale_93": {
+				"add": {
+					"component_groups": [
+						"scale_93"
+					]
+				}
+			},
+			"set_scale_94": {
+				"add": {
+					"component_groups": [
+						"scale_94"
+					]
+				}
+			},
+			"set_scale_95": {
+				"add": {
+					"component_groups": [
+						"scale_95"
+					]
+				}
+			},
+			"set_scale_96": {
+				"add": {
+					"component_groups": [
+						"scale_96"
+					]
+				}
+			},
+			"set_scale_97": {
+				"add": {
+					"component_groups": [
+						"scale_97"
+					]
+				}
+			},
+			"set_scale_98": {
+				"add": {
+					"component_groups": [
+						"scale_98"
+					]
+				}
+			},
+			"set_scale_99": {
+				"add": {
+					"component_groups": [
+						"scale_99"
+					]
+				}
+			},
+			"set_scale_100": {
+				"add": {
+					"component_groups": [
+						"scale_100"
 					]
 				}
 			}
